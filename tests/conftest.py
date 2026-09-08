@@ -81,3 +81,26 @@ def static_clip(tmp_path_factory: pytest.TempPathFactory) -> Path:
     path = tmp_path_factory.mktemp("clips") / "static.mp4"
     build_static_clip(path)
     return path
+
+
+def build_audio_clip(
+    path: Path,
+    duration: float = 3.0,
+    size: str = "320x240",
+    fps: int = 10,
+) -> None:
+    """Video + a 440Hz tone, for edit operations that touch the audio track."""
+    _run([
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+        "-f", "lavfi", "-t", str(duration), "-i", f"testsrc=size={size}:rate={fps}",
+        "-f", "lavfi", "-t", str(duration), "-i", "sine=frequency=440",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest",
+        str(path),
+    ])
+
+
+@pytest.fixture(scope="session")
+def audio_clip(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    path = tmp_path_factory.mktemp("clips") / "audio.mp4"
+    build_audio_clip(path)
+    return path

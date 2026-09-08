@@ -56,3 +56,8 @@ elif [[ -z "$HAS_GROQ" && -z "$HAS_OPENAI" ]]; then
 else
   echo "/watch: ready."
 fi
+
+# /edit only needs ffmpeg — no yt-dlp, no keys, no config file.
+if [[ -z "$HAS_FFMPEG" ]]; then
+  echo "/edit: needs ffmpeg. Run \`python3 \$CLAUDE_PLUGIN_ROOT/skills/edit/scripts/setup.py\` once to install."
+fi
