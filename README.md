@@ -1,6 +1,6 @@
 # /watch
 
-**Give Claude the ability to watch any video.**
+**Give Claude the ability to watch any video — and edit local ones with `/edit`.**
 
 Claude Code (recommended — auto-updates via marketplace):
 ```
@@ -14,9 +14,9 @@ npx skills add bradautomates/claude-video -g
 ```
 (`-g` installs globally for your user, available across all projects. Drop it to scope per-project.)
 
-More install options (claude.ai web, manual) in the [Install](#install) section below.
+Both installs bring two skills: **`/watch`** (analyze a video — URL or local) and **`/edit`** (trim, merge, compress, speed, watermark, subtitle, GIF, and more on a local file). More install options (claude.ai web, manual) in the [Install](#install) section below.
 
-Zero config to start — `yt-dlp` and `ffmpeg` install on first run via `brew` on macOS (Linux/Windows print exact commands). Captions cover most public videos for free. Whisper API key is only needed when a video has no captions.
+Zero config to start. `/watch` auto-installs `yt-dlp` + `ffmpeg` on first run via `brew` on macOS (Linux/Windows print exact commands); captions cover most public videos for free, and a Whisper API key is only needed when a video has no captions. `/edit` needs only `ffmpeg` — no API keys, no config file, nothing ever leaves your machine.
 
 ---
 
@@ -99,10 +99,10 @@ End-to-end from a cold URL, `transcript` is the cheapest mode by far; the frame 
 
 | Surface | Install |
 |---------|---------|
-| **Claude Code** | `/plugin marketplace add bradautomates/claude-video` then `/plugin install watch@claude-video` |
-| **Codex, Cursor, Copilot, Gemini CLI, +50 more** | `npx skills add bradautomates/claude-video -g` |
-| **claude.ai** (web) | [Download `watch.skill`](https://github.com/bradautomates/claude-video/releases/latest) → Settings → Capabilities → Skills → `+` |
-| **Manual / dev** | `git clone` then symlink `skills/watch` into your host's skills dir (see below) |
+| **Claude Code** | `/plugin marketplace add bradautomates/claude-video` then `/plugin install watch@claude-video` — installs both `/watch` and `/edit` |
+| **Codex, Cursor, Copilot, Gemini CLI, +50 more** | `npx skills add bradautomates/claude-video -g` — installs both skills |
+| **claude.ai** (web) | Download [`watch.skill`](https://github.com/bradautomates/claude-video/releases/latest) and/or [`edit.skill`](https://github.com/bradautomates/claude-video/releases/latest) → Settings → Capabilities → Skills → `+` (each is a separate upload) |
+| **Manual / dev** | `git clone` then symlink `skills/watch` and/or `skills/edit` into your host's skills dir (see below) |
 
 ### Claude Code
 
@@ -127,28 +127,29 @@ npx skills add bradautomates/claude-video -g
 - `-l, --list` — list the skills in this repo without installing
 - `--copy` — copy files instead of symlinking (for filesystems without symlink support)
 
-The CLI discovers the skill from `skills/watch/SKILL.md` and copies the whole folder — `SKILL.md` plus its `scripts/` runtime — as a self-contained unit. `SKILL.md` resolves its own scripts relative to wherever it was installed, so it works the same on every host.
+The CLI discovers each skill from its `SKILL.md` (`skills/watch/SKILL.md`, `skills/edit/SKILL.md`) and copies the whole folder — `SKILL.md` plus its `scripts/` runtime — as a self-contained unit. Each `SKILL.md` resolves its own scripts relative to wherever it was installed, so it works the same on every host, and you can target just one skill with `-l` to list them first.
 
-Update later with `npx skills update watch -g`.
+Update later with `npx skills update watch -g` / `npx skills update edit -g`.
 
 ### claude.ai (web)
 
-1. [Download `watch.skill`](https://github.com/bradautomates/claude-video/releases/latest) from the latest release.
+1. Download [`watch.skill`](https://github.com/bradautomates/claude-video/releases/latest) and/or [`edit.skill`](https://github.com/bradautomates/claude-video/releases/latest) from the latest release (they install independently — grab one or both).
 2. Go to Settings → Capabilities → Skills.
 3. Click `+` and drop the file in.
 
-Enable "Code execution and file creation" under Capabilities first — the skill shells out to `ffmpeg` and `yt-dlp`, so it won't run without it.
+Enable "Code execution and file creation" under Capabilities first — both skills shell out to local binaries (`ffmpeg`, and `yt-dlp` for `/watch`), so they won't run without it.
 
 ### Manual (developer)
 
-Clone the repo and symlink the self-contained skill folder into your host's skills directory — the symlink keeps the install in sync with your working tree as you edit:
+Clone the repo and symlink the self-contained skill folder(s) into your host's skills directory — the symlink keeps the install in sync with your working tree as you edit:
 
 ```bash
 git clone https://github.com/bradautomates/claude-video.git
 ln -s "$(pwd)/claude-video/skills/watch" ~/.claude/skills/watch   # or ~/.codex/skills/watch
+ln -s "$(pwd)/claude-video/skills/edit" ~/.claude/skills/edit     # or ~/.codex/skills/edit
 ```
 
-For claude.ai, build the `.skill` bundle from source: `bash skills/watch/scripts/build-skill.sh` produces `dist/watch.skill`.
+For claude.ai, build the `.skill` bundles from source: `bash skills/watch/scripts/build-skill.sh` → `dist/watch.skill`, `bash skills/edit/scripts/build-skill.sh` → `dist/edit.skill`.
 
 ## First run
 
@@ -172,7 +173,7 @@ Captions cover the majority of public videos for free. The Whisper fallback only
 | Whisper fallback (alt) | [OpenAI API key](https://platform.openai.com/api-keys) — `whisper-1` | Standard pricing |
 | Disable Whisper entirely | `--no-whisper` | Free, frames-only when no captions |
 
-## Usage
+## /watch usage
 
 ```
 /watch https://youtu.be/dQw4w9WgXcQ what happens at the 30 second mark?
@@ -200,6 +201,38 @@ Other knobs (passed to `scripts/watch.py`):
 - `--no-dedup` — keep near-duplicate frames. By default a frame-delta pass drops frames that are visually near-identical to the one before them (held slides, static screen recordings, paused video), so the frame budget is spent on distinct content; this flag turns that off.
 - `--out-dir DIR` — keep working files somewhere specific (default: auto-generated tmp dir).
 
+## /edit — edit a local video
+
+Local `ffmpeg` wrapper, no downloads, no cloud calls, no API keys — it only ever touches the file you point it at, and every operation writes a new output rather than overwriting the input.
+
+```
+/edit clip.mp4 trim the first 10 seconds off
+/edit clip.mp4 make a GIF of 0:05 to 0:08
+/edit clip.mp4 compress it to under 10MB for email
+/edit clip.mp4 add a "DRAFT" watermark in the bottom right
+/edit clip.mp4 burn in captions.srt
+/edit intro.mp4 outro.mp4 merge these into one video
+```
+
+| Operation | Purpose |
+|---|---|
+| `trim` | Cut a segment out (`--start`/`--end`/`--duration`; `--exact` for frame-accurate re-encode) |
+| `concat` | Merge multiple videos in order, normalizing resolution if sources differ |
+| `compress` | Shrink file size (`--crf`/`--preset`, or `--target-size-mb` for a two-pass encode) |
+| `speed` | Change playback speed with pitch-corrected audio (`--factor`) |
+| `volume` | Adjust audio level (`--db` or `--factor`) |
+| `mute` | Strip the audio track |
+| `watermark` | Overlay text or an image (`--text`/`--image`, `--position`) |
+| `subtitles` | Burn in or embed a `.srt`/`.vtt`/`.ass` file (`--embed` for a toggleable track) |
+| `gif` | Convert (a segment of) a video to an optimized, palette-quantized GIF |
+| `resize` | Change resolution (`--width`/`--height`/`--scale`) |
+| `crop` | Crop to a region (`--width`/`--height`/`--x`/`--y`) |
+| `rotate` | Rotate 90/180/270° (`--ccw` for counter-clockwise) |
+| `extract-audio` | Pull the audio track out (`mp3`/`aac`/`wav`/`m4a`) |
+| `thumbnail` | Grab a single frame as a JPEG at a timestamp |
+
+`/edit` only works on local files — point `/watch` at a URL first if the source isn't downloaded yet. Chained edits (trim → watermark → compress) are just multiple calls, each fed the previous step's output.
+
 ## Limits
 
 - **Long-video accuracy depends on the detail mode.** On the capped modes (`efficient`, default `balanced`) coverage thins out past ~10 minutes — the frame cap spreads across the whole clip, so the script prints a "sparse scan" warning and you're better off re-running focused with `--start`/`--end`. `token-burner` lifts the cap and keeps *every* scene-change frame across the full video, so it stays complete on longer clips at the cost of more image tokens. The 10-minute mark is guidance for the capped modes, not a hard ceiling.
@@ -220,6 +253,13 @@ Other knobs (passed to `scripts/watch.py`):
 │       ├── config.py             # shared config (~/.config/watch/.env)
 │       ├── setup.py              # preflight + installer
 │       └── build-skill.sh        # build dist/watch.skill for claude.ai upload (dev-only)
+├── skills/edit/                  # self-contained skill — independent of skills/watch
+│   ├── SKILL.md                  # skill contract for /edit
+│   └── scripts/
+│       ├── edit.py               # entry point — one ffmpeg operation per subcommand
+│       ├── ffmpeg_utils.py       # probe, time parsing, filter-string escaping
+│       ├── setup.py              # preflight + installer (ffmpeg/ffprobe only, no keys)
+│       └── build-skill.sh        # build dist/edit.skill for claude.ai upload (dev-only)
 ├── hooks/                        # SessionStart status hook (Claude Code only)
 ├── .claude-plugin/               # plugin.json + marketplace.json (Claude Code)
 ├── .codex-plugin/                # plugin.json — Codex/agents manifest ("skills": "./skills/")
@@ -232,14 +272,15 @@ Other knobs (passed to `scripts/watch.py`):
 ## Develop
 
 ```bash
-# Run the test suite (stdlib + pytest; ffmpeg required for frame tests):
+# Run the test suite (stdlib + pytest; ffmpeg required for frame/edit tests):
 python3 -m pytest -q
 
-# Build the claude.ai upload bundle:
+# Build the claude.ai upload bundles:
 bash skills/watch/scripts/build-skill.sh      # → dist/watch.skill
+bash skills/edit/scripts/build-skill.sh       # → dist/edit.skill
 ```
 
-Releasing: tag `vX.Y.Z`, push the tag. The workflow builds `dist/watch.skill` and attaches it to the GitHub release. Keep the version in sync across `skills/watch/SKILL.md`, `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json`.
+Releasing: tag `vX.Y.Z`, push the tag. The workflow builds `dist/watch.skill` and `dist/edit.skill` and attaches both to the GitHub release. Keep the version in sync across `skills/watch/SKILL.md`, `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json` (`skills/edit/SKILL.md` versions independently — it's a separate skill).
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 

@@ -29,5 +29,6 @@ CLAUDE.md
 V2_PLAN.md
 V2_CONCERNS.md
 
-# Dev-only script shipped inside the skill tree but not needed at runtime
+# Dev-only scripts shipped inside the skill trees but not needed at runtime
 skills/watch/scripts/build-skill.sh
+skills/edit/scripts/build-skill.sh

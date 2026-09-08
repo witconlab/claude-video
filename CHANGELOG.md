@@ -1,6 +1,30 @@
 # Changelog
 
-All notable changes to `/watch` are documented here.
+All notable changes to `/watch` and `/edit` are documented here.
+
+## [0.3.0] — 2026-09-08
+
+### Added
+- **`/edit` skill** — a second, independent self-contained skill (`skills/edit/`) that edits a local video file purely via local `ffmpeg`. No downloads, no cloud calls, no API keys, no config file. Fourteen operations, each a subcommand of `scripts/edit.py`:
+  - `trim` — cut a segment (`--start`/`--end`/`--duration`; fast stream-copy by default, `--exact` for frame-accurate re-encode with automatic fallback if stream-copy fails)
+  - `concat` — merge multiple videos in order; tries the fast concat-demuxer stream-copy path first, falling back to a re-encode that normalizes resolution/fps when sources differ
+  - `compress` — CRF/preset encode, or a two-pass encode targeting `--target-size-mb`
+  - `speed` — change playback speed with pitch-corrected audio (arbitrary factors via a chained `atempo` filter)
+  - `volume`, `mute` — adjust or strip the audio track
+  - `watermark` — text (via a temp file passed to `drawtext`, avoiding filter-string escaping) or image overlay, at any corner or center
+  - `subtitles` — burn in (hardsub) or `--embed` as a toggleable track from `.srt`/`.vtt`/`.ass`
+  - `gif` — palette-quantized GIF of the whole clip or a `--start`/`--end` segment
+  - `resize`, `crop`, `rotate` — geometry operations
+  - `extract-audio` — pull the audio track to `mp3`/`aac`/`wav`/`m4a`
+  - `thumbnail` — grab a single frame as a JPEG at a timestamp
+  - Every operation writes a new output file (default: alongside the input with a suffix) rather than overwriting the source.
+- `skills/edit/scripts/setup.py` — a much smaller preflight/installer than watch's: checks for `ffmpeg`/`ffprobe` only, no API keys or `.env` to manage.
+- `skills/edit/scripts/build-skill.sh` and the release workflow now also produce `dist/edit.skill` for claude.ai web uploads.
+- SessionStart hook reports `/edit` readiness (ffmpeg-only) alongside `/watch`'s.
+- pytest suite (`tests/test_edit.py`) covering every operation against ffmpeg-synthesized clips, plus a shared `audio_clip` fixture in `conftest.py`.
+
+### Changed
+- Both skills now ship under the single `watch` Claude Code plugin (`skills: "./skills/"` picks up every self-contained skill folder); install instructions cover both.
 
 ## [0.2.0] — 2026-06-29
 
