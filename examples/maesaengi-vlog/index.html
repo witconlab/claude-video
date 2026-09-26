@@ -29,6 +29,7 @@ html,body{margin:0;padding:0;background:var(--deep)}
 </head>
 <body>
 <div id="root"></div>
+<script src="script.js"></script>
 <script>
 // ------------------------------------------------------------------
 // Deterministic motion graphics: renderAt(t) paints the frame at t sec.
@@ -60,26 +61,7 @@ const SCENES = [
   { id: 'outro', a: 54.5, b: 60,   fn: sOutro },
 ];
 
-const CAPTIONS = [
-  [0.4, 2.6, '안녕하세요! 오늘은 겨울 바다의 초록 보약,'],
-  [2.6, 5.0, '매생이의 효능을 1분 만에 알려드릴게요!'],
-  [5.3, 8.2, '매생이는 깨끗한 남해안 바다에서 자라는 녹조류예요.'],
-  [8.2, 11.0, '12월부터 2월까지, 딱 겨울에만 맛볼 수 있죠.'],
-  [11.3, 14.6, '첫 번째! 철분과 칼슘이 풍부해요.'],
-  [14.6, 18.5, '빈혈 예방과 뼈 건강에 도움을 줄 수 있어요.'],
-  [18.8, 22.2, '두 번째! 식이섬유가 장 운동을 도와서'],
-  [22.2, 26.0, '변비 예방과 장 건강에 좋아요.'],
-  [26.3, 29.6, '세 번째! 칼로리는 낮고 포만감은 높아서'],
-  [29.6, 33.0, '다이어트 식단에도 딱이에요.'],
-  [33.3, 36.6, '네 번째! 아스파라긴산이 들어 있어'],
-  [36.6, 40.0, '해장 음식으로도 유명하답니다.'],
-  [40.3, 43.6, '다섯 번째! 비타민, 무기질, 엽록소가 가득해'],
-  [43.6, 47.0, '면역력과 피부 건강까지 챙겨줘요.'],
-  [47.3, 50.6, '굴과 함께 끓이면 맛도 영양도 두 배!'],
-  [50.6, 54.5, '단, 김이 잘 안 나서 생각보다 뜨거우니 조심하세요!'],
-  [54.8, 57.4, '이번 겨울, 매생이 한 그릇 어떠세요?'],
-  [57.4, 60.0, '좋아요와 구독 부탁드려요~ 건강한 하루 보내세요!'],
-];
+const CAPTIONS = window.CAPTIONS.map(c => [c.a, c.b, c.text]);
 
 // ----------------------------- Icons -------------------------------
 const ICON = {
@@ -191,7 +173,7 @@ function caption(t) {
   const n = Math.ceil(text.length * cl((t - a) / 0.9));
   const inX = eo(P(t, a, a + .25)), outX = 1 - P(t, b - .2, b);
   return `<div class="abs center" style="bottom:210px;opacity:${Math.min(inX, outX)};transform:translateY(${(1 - inX) * 20}px)">
-    <span style="display:inline-block;max-width:940px;background:rgba(5,25,31,.78);border:3px solid rgba(155,225,93,.55);padding:22px 38px;border-radius:26px;font-size:44px;font-weight:700;line-height:1.35;color:#fff">
+    <span style="display:inline-block;max-width:940px;background:rgba(5,25,31,.78);border:3px solid rgba(155,225,93,.55);padding:22px 38px;border-radius:26px;font-size:44px;font-weight:700;line-height:1.35;color:#fff;word-break:keep-all">
       ${text.slice(0, n)}<span style="opacity:0">${text.slice(n)}</span></span></div>`;
 }
 

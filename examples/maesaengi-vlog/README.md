@@ -22,7 +22,19 @@ node render.mjs                    # → out/maesaengi-vlog.mp4
 node render.mjs --stills 3,15,58   # 특정 시점 PNG 미리보기
 ```
 
+## 남자 아나운서 나레이션 버전
+
+원고는 `script.js`에 있어요(자막과 TTS가 같은 원고를 씀. `say`는 숫자를 한글로 풀어 읽는 발음용).
+[Supertonic 3](https://github.com/supertone-inc/supertonic) 한국어 남성 음성(M1~M5)으로 오프라인 합성하고, 말할 때 BGM이 자동으로 줄어들게(덕킹) 믹싱해요.
+
+```bash
+pip install supertonic                       # 첫 실행 때 huggingface.co에서 모델(~400MB) 다운로드
+python3 narration.py out/narration.wav --samples   # out/voice-M1..M5.wav 로 목소리 비교
+node render.mjs --voice M1 --mix-only        # 기존 영상에 나레이션만 입혀서 → out/maesaengi-vlog-narration.mp4
+```
+
 - `index.html` — 모든 애니메이션을 `renderAt(t)` 하나로 그리는 결정적(deterministic) 타임라인. 브라우저로 열면 실시간 재생, `?t=12`를 붙이면 해당 시점에서 멈춤.
+- `narration.py` — `script.js` 원고를 자막 시작 시점에 맞춰 합성하고, 자막 구간보다 길면 속도를 올려서 다시 합성.
 - `bgm.py` — 표준 라이브러리만으로 만든 로파이 BGM + 장면 전환 효과음.
 - `fonts/` — Noto Sans KR, Black Han Sans (SIL OFL 1.1).
 
