@@ -55,7 +55,7 @@ def main():
     style = tts.get_voice_style(args.voice)
     track = np.zeros(int(DURATION * sr), dtype=np.float32)
     for c in load_script():
-        text = c.get("say", c["text"])
+        text = c.get("say", c["text"]).replace("{", "").replace("}", "")
         window = c["b"] - c["a"] - 0.15
         speed = args.speed
         while True:

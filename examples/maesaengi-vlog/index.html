@@ -166,15 +166,50 @@ function hud(t) {
   <div class="abs" style="left:72px;top:160px;font-size:28px;font-weight:700;opacity:.85;background:rgba(0,0,0,.25);padding:6px 20px;border-radius:12px">VLOG · 겨울 제철 푸드 탐구</div>`;
 }
 
+// Apple-keynote-style kinetic captions: words rise out of a blur one by one,
+// {braced} words get a gradient, and the line dissolves upward on exit.
+const expo = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+function tokenize(text) {
+  const out = []; let em = false, word = '', wordEm = false;
+  const flush = () => { if (word) out.push({ w: word, em: wordEm }); word = ''; wordEm = false; };
+  for (const ch of text) {
+    if (ch === '{') { flush(); em = true; continue; }
+    if (ch === '}') { flush(); em = false; continue; }
+    if (ch === ' ') { flush(); out.push(null); continue; }
+    if (!word) wordEm = em;
+    word += ch;
+  }
+  flush();
+  // Glue fragments that are not separated by a space (e.g. "{철분과 칼슘}이") into one word group.
+  const groups = []; let cur = [];
+  for (const tk of out) { if (tk === null) { if (cur.length) groups.push(cur); cur = []; } else cur.push(tk); }
+  if (cur.length) groups.push(cur);
+  return groups;
+}
+
 function caption(t) {
-  const c = CAPTIONS.find(c => t >= c[0] && t < c[1]);
+  const c = CAPTIONS.find(c => t >= c[0] - .05 && t < c[1]);
   if (!c) return '';
   const [a, b, text] = c;
-  const n = Math.ceil(text.length * cl((t - a) / 0.9));
-  const inX = eo(P(t, a, a + .25)), outX = 1 - P(t, b - .2, b);
-  return `<div class="abs center" style="bottom:210px;opacity:${Math.min(inX, outX)};transform:translateY(${(1 - inX) * 20}px)">
-    <span style="display:inline-block;max-width:940px;background:rgba(5,25,31,.78);border:3px solid rgba(155,225,93,.55);padding:22px 38px;border-radius:26px;font-size:44px;font-weight:700;line-height:1.35;color:#fff;word-break:keep-all">
-      ${text.slice(0, n)}<span style="opacity:0">${text.slice(n)}</span></span></div>`;
+  const groups = tokenize(text);
+  let html = '';
+  groups.forEach((g, i) => {
+    const s0 = a + i * .075;
+    const x = expo(P(t, s0, s0 + .8));
+    const o0 = b - .38 + i * .02;
+    const y = eio(P(t, o0, o0 + .3));
+    const op = x * (1 - y);
+    if (op <= 0.001) { html += `<span style="display:inline-block;opacity:0">${g.map(f => f.w).join('')}</span> `; return; }
+    const blur = (1 - x) * 16 + y * 12;
+    const inner = g.map(f => f.em
+      ? `<span style="background:linear-gradient(100deg,#d4ff8a 0%,#8ef0a0 45%,#5fd8e8 100%);-webkit-background-clip:text;background-clip:text;color:transparent">${f.w}</span>`
+      : f.w).join('');
+    html += `<span style="display:inline-block;opacity:${op};filter:blur(${blur.toFixed(2)}px);transform:translateY(${((1 - x) * 46 - y * 26).toFixed(1)}px) scale(${(.94 + .06 * x).toFixed(3)})">${inner}</span> `;
+  });
+  return `<div class="abs" style="left:0;right:0;bottom:0;height:560px;background:linear-gradient(180deg,rgba(3,22,28,0) 0%,rgba(3,22,28,.55) 45%,rgba(3,22,28,.8) 100%)"></div>
+    <div class="abs center" style="bottom:200px;display:flex;justify-content:center">
+      <div style="max-width:900px;font-size:62px;font-weight:900;letter-spacing:-0.035em;line-height:1.22;color:#fff;word-break:keep-all;text-shadow:0 2px 24px rgba(0,0,0,.35)">${html}</div>
+    </div>`;
 }
 
 // ---------------------------- Scenes -------------------------------
