@@ -25,6 +25,7 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
 await page.goto(pathToFileURL(path.join(here, 'index.html')).href + '?render=1');
 await page.evaluate(() => document.fonts.ready);
+await page.evaluate(() => window.photosReady);
 // Warm up every font face before capturing.
 await page.evaluate(() => Promise.all([...document.fonts].map(f => f.load().catch(() => null))));
 const duration = await page.evaluate(() => window.DURATION);
@@ -32,7 +33,7 @@ const root = page.locator('#root');
 
 if (stillsIdx >= 0) {
   for (const t of args[stillsIdx + 1].split(',').map(Number)) {
-    await page.evaluate(t => window.renderAt(t), t);
+    await page.evaluate(t => { window.renderAt(t); return Promise.all([...document.images].map(i => i.decode().catch(() => null))); }, t);
     await root.screenshot({ path: path.join(outDir, `still-${t}.png`) });
     console.log('still', t);
   }
@@ -79,7 +80,7 @@ const ff = spawn('ffmpeg', [
 
 const total = Math.round(duration * FPS);
 for (let i = 0; i < total; i++) {
-  await page.evaluate(t => window.renderAt(t), i / FPS);
+  await page.evaluate(t => { window.renderAt(t); return Promise.all([...document.images].map(i => i.decode().catch(() => null))); }, i / FPS);
   const buf = await root.screenshot({ type: 'jpeg', quality: 92 });
   if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r));
   if (i % 150 === 0) console.log(`frame ${i}/${total}`);

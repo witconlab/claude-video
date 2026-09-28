@@ -170,6 +170,8 @@ function hud(t) {
 // {braced} words get a gradient, and the line dissolves upward on exit.
 const expo = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
 function tokenize(text) {
+  // Returns word groups (어절). "{...}" marks gradient emphasis; spaces separate 어절, so
+  // "{철분과 칼슘}이" stays one unbreakable group.
   const out = []; let em = false, word = '', wordEm = false;
   const flush = () => { if (word) out.push({ w: word, em: wordEm }); word = ''; wordEm = false; };
   for (const ch of text) {
@@ -180,35 +182,63 @@ function tokenize(text) {
     word += ch;
   }
   flush();
-  // Glue fragments that are not separated by a space (e.g. "{철분과 칼슘}이") into one word group.
   const groups = []; let cur = [];
   for (const tk of out) { if (tk === null) { if (cur.length) groups.push(cur); cur = []; } else cur.push(tk); }
   if (cur.length) groups.push(cur);
   return groups;
 }
 
+// Split a caption into display lines. Authors mark semantic breaks with "|" in script.js
+// (clause / phrase boundaries). Unmarked lines that are too long are broken at the 어절
+// boundary closest to the middle, preferring a comma, so a word or phrase is never split.
+const MAX_CHARS = 17;
+const glen = g => g.reduce((n, f) => n + f.w.length, 0);
+function captionLines(text) {
+  const lines = [];
+  for (const part of text.split('|').map(x => x.trim()).filter(Boolean)) {
+    const groups = tokenize(part);
+    const total = groups.reduce((n, g) => n + glen(g), 0) + groups.length - 1;
+    if (total <= MAX_CHARS || groups.length < 2) { lines.push(groups); continue; }
+    let best = 1, bestScore = Infinity, run = 0;
+    for (let i = 1; i < groups.length; i++) {
+      run += glen(groups[i - 1]) + 1;
+      const last = groups[i - 1][groups[i - 1].length - 1].w;
+      const score = Math.abs(run - total / 2) - (/[,，]$/.test(last) ? 6 : 0);
+      if (score < bestScore) { bestScore = score; best = i; }
+    }
+    lines.push(groups.slice(0, best), groups.slice(best));
+  }
+  return lines;
+}
+
 function caption(t) {
   const c = CAPTIONS.find(c => t >= c[0] - .05 && t < c[1]);
   if (!c) return '';
   const [a, b, text] = c;
-  const groups = tokenize(text);
-  let html = '';
-  groups.forEach((g, i) => {
-    const s0 = a + i * .075;
-    const x = expo(P(t, s0, s0 + .8));
-    const o0 = b - .38 + i * .02;
-    const y = eio(P(t, o0, o0 + .3));
-    const op = x * (1 - y);
-    if (op <= 0.001) { html += `<span style="display:inline-block;opacity:0">${g.map(f => f.w).join('')}</span> `; return; }
-    const blur = (1 - x) * 16 + y * 12;
-    const inner = g.map(f => f.em
-      ? `<span style="background:linear-gradient(100deg,#d4ff8a 0%,#8ef0a0 45%,#5fd8e8 100%);-webkit-background-clip:text;background-clip:text;color:transparent">${f.w}</span>`
-      : f.w).join('');
-    html += `<span style="display:inline-block;opacity:${op};filter:blur(${blur.toFixed(2)}px);transform:translateY(${((1 - x) * 46 - y * 26).toFixed(1)}px) scale(${(.94 + .06 * x).toFixed(3)})">${inner}</span> `;
+  const lines = captionLines(text);
+  const longest = Math.max(...lines.map(l => l.reduce((n, g) => n + glen(g), 0) + l.length - 1));
+  const size = Math.min(64, Math.floor(930 / (longest * .93)));
+  let idx = 0, html = '';
+  lines.forEach((groups, li) => {
+    let row = '';
+    groups.forEach(g => {
+      const i = idx++;
+      const s0 = a + i * .075 + li * .12;
+      const x = expo(P(t, s0, s0 + .8));
+      const o0 = b - .38 + i * .02;
+      const y = eio(P(t, o0, o0 + .3));
+      const op = x * (1 - y);
+      const blur = (1 - x) * 16 + y * 12;
+      const inner = g.map(f => f.em
+        ? `<span style="background:linear-gradient(100deg,#d4ff8a 0%,#8ef0a0 45%,#5fd8e8 100%);-webkit-background-clip:text;background-clip:text;color:transparent">${f.w}</span>`
+        : f.w).join('');
+      row += `<span style="display:inline-block;margin:0 .14em;opacity:${op.toFixed(3)};filter:blur(${blur.toFixed(2)}px);transform:translateY(${((1 - x) * 46 - y * 26).toFixed(1)}px) scale(${(.94 + .06 * x).toFixed(3)})">${inner}</span>`;
+    });
+    html += `<div style="white-space:nowrap">${row}</div>`;
   });
-  return `<div class="abs" style="left:0;right:0;bottom:0;height:560px;background:linear-gradient(180deg,rgba(3,22,28,0) 0%,rgba(3,22,28,.55) 45%,rgba(3,22,28,.8) 100%)"></div>
-    <div class="abs center" style="bottom:200px;display:flex;justify-content:center">
-      <div style="max-width:900px;font-size:62px;font-weight:900;letter-spacing:-0.035em;line-height:1.22;color:#fff;word-break:keep-all;text-shadow:0 2px 24px rgba(0,0,0,.35)">${html}</div>
+  return `<div class="abs" style="left:0;right:0;bottom:0;height:600px;background:linear-gradient(180deg,rgba(3,22,28,0) 0%,rgba(3,22,28,.55) 45%,rgba(3,22,28,.82) 100%)"></div>
+    <div class="abs center" style="bottom:190px">
+      <div style="display:inline-block;font-size:${size}px;font-weight:900;letter-spacing:-0.035em;line-height:1.24;color:#fff;text-shadow:0 2px 24px rgba(0,0,0,.35)">${html}</div>
     </div>`;
 }
 
@@ -526,6 +556,33 @@ function sOutro(lt) {
 }
 
 // ---------------------------- Compose ------------------------------
+// Optional real photos: drop photos/<scene id>.jpg (intro, what, b1..b5, tip, outro).
+// Missing files are skipped and the illustrated sea background shows instead.
+const PHOTO_OK = {};
+window.photosReady = Promise.all(SCENES.map(sc => new Promise(res => {
+  const img = new Image();
+  img.onload = () => { PHOTO_OK[sc.id] = img.src; res(); };
+  img.onerror = () => res();
+  img.src = `photos/${sc.id}.jpg`;
+})));
+function photoLayer(t) {
+  let html = '';
+  SCENES.forEach((sc, i) => {
+    const src = PHOTO_OK[sc.id];
+    if (!src) return;
+    const lt = t - sc.a, d = sc.b - sc.a;
+    if (lt < -0.5 || lt > d + 0.5) return;
+    const op = Math.min(P(lt, -0.3, 0.3), 1 - P(lt, d - 0.2, d + 0.4), sc.id === 'outro' ? 1 : 1);
+    if (op <= 0) return;
+    const k = P(lt, -0.5, d + 0.5);
+    const dir = i % 2 ? 1 : -1;
+    html += `<div class="abs" style="inset:0;overflow:hidden;opacity:${op}">
+      <img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(${1.08 + .1 * k}) translate(${dir * (k - .5) * 30}px, ${(.5 - k) * 20}px)">
+      <div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(4,26,32,.55) 0%,rgba(4,26,32,.35) 40%,rgba(4,26,32,.7) 100%)"></div></div>`;
+  });
+  return html;
+}
+
 function renderAt(t) {
   const sway = `translate(${Math.sin(t * 1.3) * 5 + Math.sin(t * 3.1) * 2}px, ${Math.cos(t * 1.1) * 4 + Math.sin(t * 2.7) * 2}px) rotate(${Math.sin(t * .7) * .35}deg) scale(1.02)`;
   let scenes = '';
@@ -546,7 +603,7 @@ function renderAt(t) {
   const fadeIn = 1 - P(t, 0, .4);
   document.getElementById('root').innerHTML = `
     <div class="abs" style="left:0;top:0;width:${W}px;height:${H}px;transform:${sway};transform-origin:50% 50%">
-      ${background(t)}${scenes}
+      ${background(t)}${photoLayer(t)}${scenes}
     </div>
     ${hud(t)}${caption(t)}
     <div class="abs" style="inset:0;background:#fff;opacity:${cl(flash) * .35};pointer-events:none"></div>
