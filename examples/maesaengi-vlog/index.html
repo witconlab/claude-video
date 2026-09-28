@@ -163,7 +163,7 @@ function hud(t) {
     <span style="display:inline-block;width:52px;height:26px;border:4px solid #fff;border-radius:6px;position:relative">
       <span style="position:absolute;left:3px;top:3px;bottom:3px;width:70%;background:var(--lime);border-radius:2px"></span></span>
   </div>
-  <div class="abs" style="left:72px;top:160px;font-size:28px;font-weight:700;opacity:.85;background:rgba(0,0,0,.25);padding:6px 20px;border-radius:12px">VLOG · 겨울 제철 푸드 탐구</div>`;
+  <div class="abs" style="left:72px;top:160px;font-size:28px;font-weight:700;opacity:.85;background:rgba(0,0,0,.25);padding:6px 20px;border-radius:12px">VLOG · 갯푸른 매생이 탐구</div>`;
 }
 
 // Apple-keynote-style kinetic captions: words rise out of a blur one by one,
@@ -244,131 +244,107 @@ function caption(t) {
 
 // ---------------------------- Scenes -------------------------------
 // Each scene gets local time lt and duration d; content is laid out in a
-// 1080x1300 frame starting at y=260.
+// 1080x1300 frame starting at y=260. Photos come from 갯푸른 (photos/).
+
+// 갯푸른 character: gentle bob + sway, optional wave (rocking rotation).
+function chara(t, h, opts = {}) {
+  const bob = Math.sin(t * 3.6) * 10;
+  const rot = opts.wave ? Math.sin(t * 5) * 5 : Math.sin(t * 1.8) * 2;
+  return `<img src="photos/gaetpureun.png" style="height:${h}px;display:block;transform:translateY(${bob}px) rotate(${rot}deg);transform-origin:50% 90%;filter:drop-shadow(0 18px 30px rgba(0,0,0,.35))">`;
+}
+
+// Rounded photo card with a slow Ken Burns push and an optional caption tag.
+function pcard(src, x, y, w, h, lt, a, tag = '', pos = '50% 50%') {
+  const e = eo(P(lt, a, a + .7)), k = P(lt, a, a + 8);
+  return `<div class="abs" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;border-radius:36px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.4);opacity:${e};transform:translateY(${(1 - e) * 80}px) scale(${.96 + .04 * e})">
+    <img src="photos/${src}" style="width:100%;height:100%;object-fit:cover;object-position:${pos};transform:scale(${1.04 + .08 * k})">
+    ${tag ? `<div style="position:absolute;left:24px;bottom:22px;padding:10px 24px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:30px;font-weight:700;opacity:${P(lt, a + .5, a + .9)}">${tag}</div>` : ''}
+  </div>`;
+}
+const num = n => Math.round(n).toLocaleString('en-US');
 
 function sIntro(lt) {
-  const word = '매생이';
   let letters = '';
-  [...word].forEach((ch, i) => {
-    const x = P(lt, .5 + i * .16, .5 + i * .16 + .55);
-    letters += `<span style="display:inline-block;opacity:${cl(x * 3)};transform:translateY(${(1 - eb(x)) * -260}px) rotate(${(1 - x) * (i - 1) * 30}deg)">${ch}</span>`;
+  [...'매생이'].forEach((ch, i) => {
+    const x = P(lt, .7 + i * .16, .7 + i * .16 + .55);
+    letters += `<span style="display:inline-block;opacity:${cl(x * 3)};transform:translateY(${(1 - eb(x)) * -200}px)">${ch}</span>`;
   });
-  const ul = eo(P(lt, 1.5, 2.1));
-  let sparks = '';
-  for (let i = 0; i < 8; i++) {
-    const a = i / 8 * Math.PI * 2 + lt * .5;
-    const r = 430 + Math.sin(lt * 2 + i) * 20;
-    const s = 30 + 18 * Math.sin(lt * 4 + i * 2);
-    sparks += `<div class="abs" style="left:${540 + Math.cos(a) * r - s / 2}px;top:${470 + Math.sin(a) * r * .45 - s / 2}px;width:${s}px;height:${s}px;opacity:${P(lt, 1, 1.6) * .9}">${ICON.sparkle(i % 2 ? '#ffd24a' : '#bff3ff')}</div>`;
-  }
+  const ul = eo(P(lt, 1.6, 2.2));
   return `
-    ${sparks}
-    <div class="abs center" style="top:120px"><span class="chip" style="background:var(--sun);color:var(--ink);${rise(lt, .2)}">겨울 제철 슈퍼푸드</span></div>
-    <div class="abs center bhs" style="top:240px;font-size:300px;line-height:1;color:#b8f07a;text-shadow:0 12px 0 #1f6b45,0 26px 50px rgba(0,0,0,.45);letter-spacing:10px">${letters}</div>
-    <div class="abs center" style="top:600px;${rise(lt, 1.4)}">
-      <div style="display:inline-block;position:relative;font-size:84px;font-weight:900">
-        효능 <span style="color:var(--sun)">1분</span> 정리
-        <div style="position:absolute;left:0;bottom:-14px;height:14px;border-radius:8px;background:var(--coral);width:${ul * 100}%"></div>
-      </div>
+    ${pcard('farm.jpg', 60, 10, 960, 560, lt, .1, '청정 남해안 매생이 갯벌')}
+    <div class="abs" style="left:80px;top:610px;${rise(lt, .5)}"><span class="chip" style="background:var(--sun);color:var(--ink)">겨울 제철 슈퍼푸드</span></div>
+    <div class="abs bhs" style="left:70px;top:690px;font-size:220px;line-height:1;color:#b8f07a;text-shadow:0 10px 0 #1f6b45,0 24px 50px rgba(0,0,0,.5);letter-spacing:6px">${letters}</div>
+    <div class="abs" style="left:80px;top:960px;${rise(lt, 1.5)}">
+      <div style="display:inline-block;position:relative;font-size:76px;font-weight:900">효능 <span style="color:var(--sun)">1분</span> 정리
+        <div style="position:absolute;left:0;bottom:-12px;height:12px;border-radius:8px;background:var(--coral);width:${ul * 100}%"></div></div>
     </div>
-    <div class="abs center" style="top:800px"><div style="display:inline-block;${pop(lt, 1.0, .7)}">${mascot(lt, 420, { wave: true })}</div></div>`;
+    <div class="abs" style="right:40px;top:640px;${pop(lt, 1.1, .7)}">${chara(lt, 450, { wave: true })}</div>`;
 }
 
 function sWhat(lt) {
-  const pins = [
-    { name: '완도', x: 250, y: 300, a: 1.6 },
-    { name: '장흥', x: 450, y: 210, a: 1.9 },
-    { name: '고흥', x: 690, y: 270, a: 2.2 },
-  ];
-  let pinHtml = '';
-  pins.forEach(p => {
-    const x = P(lt, p.a, p.a + .5);
-    pinHtml += `<div class="abs" style="left:${p.x - 50}px;top:${p.y - 110}px;width:100px;text-align:center;opacity:${cl(x * 3)};transform:translateY(${(1 - eb(x)) * -80}px)">
-      <svg viewBox="0 0 60 80" width="60" height="80"><path d="M30 78 C30 78 4 44 4 28 a26 26 0 0 1 52 0 C56 44 30 78 30 78Z" fill="#ff7a59"/><circle cx="30" cy="28" r="10" fill="#fff"/></svg>
-      <div style="font-size:34px;font-weight:900;color:var(--ink);margin-top:-2px">${p.name}</div></div>`;
+  const rows = [['완도', 2154], ['장흥', 1715], ['강진', 533], ['고흥', 352], ['해남', 154]];
+  let bars = '';
+  rows.forEach(([name, v], i) => {
+    const a0 = 2.2 + i * .15, x = eo(P(lt, a0, a0 + 1.1));
+    const home = name === '강진';
+    bars += `<div style="display:flex;align-items:center;height:66px;${rise(lt, a0 - .2, .4, 30)}">
+      <div style="width:110px;font-size:40px;font-weight:900;color:${home ? '#1f7a45' : 'var(--ink)'}">${name}</div>
+      <div style="flex:1;height:40px;position:relative">
+        <div style="height:100%;width:${(v / 2154) * 78 * x}%;border-radius:20px;background:${home ? 'linear-gradient(90deg,#43b86a,#9be15d)' : '#cfe3d4'}"></div>
+        <div style="position:absolute;top:-2px;left:calc(${(v / 2154) * 78 * x}% + 14px);font-size:36px;font-weight:900;color:${home ? '#1f7a45' : '#4a5e57'};white-space:nowrap">${num(v * x)}
+          ${home ? `<span style="font-size:26px;background:#1f7a45;color:#fff;padding:4px 14px;border-radius:999px;margin-left:8px;opacity:${P(lt, 3.6, 4)}">갯푸른 소재지</span>` : ''}</div>
+      </div></div>`;
   });
-  const wave = (y, ph) => { let d = `M0 ${y}`; for (let x = 0; x <= 900; x += 30) d += ` L${x} ${y + Math.sin(x / 60 + lt * 2 + ph) * 8}`; return d; };
-  let months = '';
-  for (let m = 1; m <= 12; m++) {
-    const on = m === 12 || m <= 2;
-    const x = P(lt, 3.2 + m * .06, 3.2 + m * .06 + .4);
-    const glow = on ? P(lt, 4.3, 4.8) : 0;
-    months += `<div style="flex:1;height:112px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;
-      background:${on && glow > 0 ? `rgba(67,184,106,${.25 + .75 * glow})` : '#e9e2cf'};color:${on && glow > .5 ? '#fff' : '#6d7a74'};
-      opacity:${x};white-space:nowrap;transform:scale(${.6 + .4 * eb(x) + (on ? .08 * glow : 0)})">${m}</div>`;
-  }
-  const seasonBadge = pop(lt, 4.7, .5);
   return `
-    <div class="abs center" style="top:40px"><span class="bhs" style="display:inline-block;font-size:120px;color:#fff;${rise(lt, .1)}">매생이<span style="color:var(--sun)">란?</span></span></div>
-    <div class="abs card" style="left:90px;top:230px;width:900px;height:470px;overflow:hidden;${rise(lt, .6, .7, 120)}">
-      <svg class="abs" style="left:0;top:0" width="900" height="470">
-        <rect width="900" height="470" fill="#bfe9f0"/>
-        <path d="M0 0 H900 V170 C820 200 780 150 720 190 C660 230 610 170 540 200 C470 230 420 160 360 200 C300 240 250 180 190 220 C130 250 60 200 0 230Z" fill="#cde8a6"/>
-        <path d="${wave(300, 0)}" stroke="#fff" stroke-width="4" fill="none" opacity=".7"/>
-        <path d="${wave(370, 2)}" stroke="#fff" stroke-width="4" fill="none" opacity=".5"/>
-        <path d="${wave(430, 4)}" stroke="#fff" stroke-width="4" fill="none" opacity=".35"/>
-      </svg>
-      <div class="abs" style="left:30px;top:24px;font-size:34px;font-weight:900;color:#2f6b3e">전남 남해안</div>
-      <div class="abs" style="right:30px;bottom:24px;font-size:34px;font-weight:900;color:#0f5a66">청정 갯벌 바다</div>
-      ${pinHtml}
+    <div class="abs" style="left:80px;top:10px"><span class="bhs" style="display:inline-block;font-size:110px;color:#fff;${rise(lt, .1)}">매생이<span style="color:var(--sun)">란?</span></span></div>
+    ${pcard('harvest.jpg', 60, 160, 560, 400, lt, .4, '겨울 바다에서 채취')}
+    <div class="abs" style="left:650px;top:170px;width:380px;font-size:36px;font-weight:700;line-height:1.45;word-break:keep-all">
+      <div style="${rise(lt, .9)}"><span style="color:var(--lime)">●</span> 녹조류 매생잇과</div>
+      <div style="margin-top:22px;${rise(lt, 1.1)}"><span style="color:var(--lime)">●</span> 머리카락보다 가는 실, 길이 약 15cm</div>
+      <div style="margin-top:22px;${rise(lt, 1.3)}"><span style="color:var(--lime)">●</span> ‘생생한 이끼를 바로 뜬다’는 순우리말</div>
     </div>
-    <div class="abs card" style="left:90px;top:740px;width:900px;height:300px;padding:0;${rise(lt, 3.0, .6, 120)}">
-      <div style="position:absolute;left:40px;top:28px;font-size:40px;font-weight:900">제철 캘린더 <span style="font-size:30px;color:#6d7a74">(월)</span></div>
-      <div style="position:absolute;right:40px;top:22px;${seasonBadge}"><span class="chip" style="background:var(--green);color:#fff">제철 12~2월</span></div>
-      <div style="position:absolute;left:30px;right:30px;top:130px;display:flex;gap:10px">${months}</div>
-    </div>
-    <div class="abs center" style="top:1080px;${rise(lt, 5.0)}"><span style="font-size:40px;font-weight:700;background:rgba(0,0,0,.28);padding:14px 30px;border-radius:20px">머리카락보다 가는 <b style="color:var(--lime)">초록 실</b> 같은 해조류</span></div>`;
+    <div class="abs card" style="left:60px;top:600px;width:960px;height:560px;padding:36px 50px;box-sizing:border-box;${rise(lt, 1.6, .7, 120)}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px">
+        <div style="font-size:42px;font-weight:900">지역별 생산량</div><div style="font-size:28px;color:#6d7a74">2013년 · 단위 톤</div></div>
+      ${bars}
+      <div style="margin-top:14px;font-size:28px;font-weight:700;color:#4a5e57;${rise(lt, 4.2)}">초살(첫 수확) <b style="color:#1f7a45">12월 중순~1월 중순</b> · 가장 부드럽고 향이 좋아요</div>
+    </div>`;
 }
 
-// Shared frame for the five benefit scenes.
-function benefitFrame(lt, no, title, sub, color, visual) {
+// Shared frame for the five benefit scenes: header, photo with tag, infographic card.
+function benefitFrame(lt, no, title, color, photo, tag, visual, pos) {
   const numX = eo(P(lt, .05, .6));
   return `
-    <div class="abs" style="left:90px;top:30px;display:flex;align-items:center;gap:28px;opacity:${numX};transform:translateX(${(1 - numX) * -160}px)">
-      <div class="bhs" style="font-size:170px;line-height:1;color:transparent;-webkit-text-stroke:6px ${color}">${no}</div>
-      <div>
-        <div style="font-size:36px;font-weight:700;letter-spacing:6px;color:${color}">효능 ${no}</div>
-        <div class="bhs" style="font-size:100px;line-height:1.05;color:#fff">${title}</div>
-      </div>
+    <div class="abs" style="left:70px;top:0;display:flex;align-items:center;gap:26px;opacity:${numX};transform:translateX(${(1 - numX) * -160}px)">
+      <div class="bhs" style="font-size:160px;line-height:1;color:transparent;-webkit-text-stroke:6px ${color}">${no}</div>
+      <div><div style="font-size:34px;font-weight:700;letter-spacing:6px;color:${color}">효능 ${no}</div>
+        <div class="bhs" style="font-size:96px;line-height:1.05;color:#fff">${title}</div></div>
     </div>
-    <div class="abs" style="left:90px;top:250px;${rise(lt, .5)}"><span class="chip" style="background:${color};color:var(--ink);font-size:44px">${sub}</span></div>
-    <div class="abs card" style="left:90px;top:380px;width:900px;height:760px;overflow:hidden;${rise(lt, .7, .7, 140)}">${visual}</div>`;
-}
-
-function bar(lt, a, label, pct, color, icon, note) {
-  const x = eo(P(lt, a, a + 1.2));
-  return `<div style="display:flex;align-items:center;gap:30px;margin-bottom:60px;${rise(lt, a - .3)}">
-    <div style="width:130px;height:130px;flex:none">${icon}</div>
-    <div style="flex:1">
-      <div style="display:flex;justify-content:space-between;font-size:44px;font-weight:900;margin-bottom:16px"><span>${label}</span><span style="color:${color}">${note}</span></div>
-      <div style="height:44px;border-radius:22px;background:#e9e2cf;overflow:hidden">
-        <div style="height:100%;width:${pct * x}%;border-radius:22px;background:${color};position:relative">
-          <div style="position:absolute;right:16px;top:6px;font-size:26px;font-weight:900;color:#fff;opacity:${P(lt, a + 1, a + 1.3)}">풍부</div>
-        </div></div>
-    </div></div>`;
+    ${pcard(photo, 60, 220, 960, 400, lt, .35, tag, pos)}
+    <div class="abs card" style="left:60px;top:650px;width:960px;height:540px;overflow:hidden;${rise(lt, .8, .7, 140)}">${visual}</div>`;
 }
 
 function sIron(lt) {
-  let cells = '';
-  for (let i = 0; i < 7; i++) {
-    const x = 60 + i * 125 + Math.sin(lt * 1.5 + i) * 14;
-    const y = 640 + Math.sin(lt * 2 + i * 1.7) * 30;
-    cells += `<ellipse cx="${x}" cy="${y}" rx="38" ry="24" fill="#ff6b6b" opacity="${.25 + .15 * (i % 2)}"/><ellipse cx="${x}" cy="${y}" rx="16" ry="9" fill="#ffb3b3" opacity=".5"/>`;
-  }
+  const data = [['나트륨', 638], ['마그네슘', 610], ['칼슘', 575], ['칼륨', 381], ['인', 337], ['철', 122]];
+  let cols = '';
+  data.forEach(([name, v], i) => {
+    const a0 = 1.3 + i * .12, x = eo(P(lt, a0, a0 + 1));
+    const hi = name === '칼슘' || name === '철';
+    cols += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">
+      <div style="font-size:34px;font-weight:900;color:${hi ? '#e5533d' : '#4a5e57'};margin-bottom:8px;opacity:${cl(x * 2)}">${num(v * x)}</div>
+      <div style="width:84px;height:${(v / 638) * 260 * x}px;border-radius:18px 18px 6px 6px;background:${hi ? 'linear-gradient(180deg,#ff8f7a,#e5533d)' : 'linear-gradient(180deg,#9be15d,#43b86a)'}"></div>
+      <div style="font-size:30px;font-weight:900;margin-top:12px;color:${hi ? '#e5533d' : 'var(--ink)'}">${name}</div></div>`;
+  });
   const visual = `
-    <svg class="abs" style="left:0;top:0" width="900" height="760">${cells}</svg>
-    <div style="position:absolute;left:60px;right:60px;top:80px">
-      ${bar(lt, 1.4, '철분', 92, '#ff6b6b', ICON.drop('#ff6b6b'), '빈혈 예방')}
-      ${bar(lt, 2.4, '칼슘', 84, '#58a8ff', ICON.bone('#58a8ff'), '뼈·치아 건강')}
-    </div>
-    <div class="abs center" style="bottom:190px;font-size:40px;font-weight:700;color:#4a5e57;${rise(lt, 3.8)}">혈액과 뼈를 채워주는 <b style="color:var(--green)">미네랄 창고</b></div>`;
-  return benefitFrame(lt, '01', '철분 · 칼슘', '빈혈 예방 & 뼈 건강', '#ff8f7a', visual);
+    <div style="position:absolute;left:50px;top:30px;font-size:40px;font-weight:900">매생이 미네랄 함량 <span style="font-size:28px;color:#6d7a74">(mg)</span></div>
+    <div style="position:absolute;left:40px;right:40px;top:100px;height:370px;display:flex;gap:16px">${cols}</div>
+    <div style="position:absolute;left:50px;bottom:22px;font-size:24px;color:#6d7a74">출처: 전라남도 보건환경연구원 성분분석 (갯푸른 회사소개서)</div>`;
+  return benefitFrame(lt, '01', '무기질 가득', '#ff8f7a', 'hand.jpg', '빈혈 예방 & 뼈 건강', visual);
 }
 
 function sFiber(lt) {
-  // Serpentine "gut" path; compute points analytically so dots can ride it.
   const pts = [];
-  const rows = 4, left = 150, right = 750, top = 140, gap = 120;
+  const rows = 3, left = 170, right = 790, top = 80, gap = 110;
   for (let r = 0; r < rows; r++) {
     const y = top + r * gap;
     const xs = r % 2 === 0 ? [left, right] : [right, left];
@@ -382,141 +358,108 @@ function sFiber(lt) {
   for (let i = 1; i < pts.length; i++) segs.push(segs[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
   const total = segs[segs.length - 1];
   const at = d => { d = ((d % total) + total) % total; let i = 1; while (i < segs.length - 1 && segs[i] < d) i++; const f = (d - segs[i - 1]) / (segs[i] - segs[i - 1] || 1); return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f]; };
-  const draw = eio(P(lt, 1.0, 2.6));
+  const draw = eio(P(lt, 1.2, 2.6));
   const poly = pts.map(p => p.join(',')).join(' ');
   let dots = '';
-  if (lt > 2.4) for (let i = 0; i < 14; i++) {
-    const [x, y] = at(i * total / 14 + (lt - 2.4) * 260);
-    dots += `<circle cx="${x}" cy="${y}" r="${13 + (i % 3) * 3}" fill="${i % 2 ? '#43b86a' : '#9be15d'}" opacity="${P(lt, 2.4, 2.8)}"/>`;
+  if (lt > 2.4) for (let i = 0; i < 12; i++) {
+    const [x, y] = at(i * total / 12 + (lt - 2.4) * 240);
+    dots += `<circle cx="${x}" cy="${y}" r="${12 + (i % 3) * 3}" fill="${i % 2 ? '#43b86a' : '#9be15d'}" opacity="${P(lt, 2.4, 2.8)}"/>`;
   }
   const visual = `
-    <svg class="abs" style="left:0;top:0" width="900" height="760">
-      <polyline points="${poly}" fill="none" stroke="#ffd9cf" stroke-width="78" stroke-linecap="round" stroke-linejoin="round"
-        stroke-dasharray="${total}" stroke-dashoffset="${total * (1 - draw)}"/>
-      <polyline points="${poly}" fill="none" stroke="#ffb8a6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity=".6"
-        stroke-dasharray="${total}" stroke-dashoffset="${total * (1 - draw)}"/>
+    <svg class="abs" style="left:0;top:0" width="960" height="540">
+      <polyline points="${poly}" fill="none" stroke="#ffd9cf" stroke-width="70" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${total}" stroke-dashoffset="${total * (1 - draw)}"/>
+      <polyline points="${poly}" fill="none" stroke="#ffb8a6" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".6" stroke-dasharray="${total}" stroke-dashoffset="${total * (1 - draw)}"/>
       ${dots}
     </svg>
-    <div class="abs" style="left:60px;right:60px;top:600px;display:flex;justify-content:space-around">
+    <div class="abs" style="left:40px;right:40px;top:410px;display:flex;justify-content:space-around">
       <span class="chip" style="background:#e6f6ea;color:#1f7a45;${pop(lt, 3.2)}">장 운동 활발</span>
-      <span class="chip" style="background:#e6f6ea;color:#1f7a45;${pop(lt, 3.6)}">변비 예방</span>
-      <span class="chip" style="background:#e6f6ea;color:#1f7a45;${pop(lt, 4.0)}">노폐물 배출</span>
+      <span class="chip" style="background:#e6f6ea;color:#1f7a45;${pop(lt, 3.5)}">변비 예방</span>
+      <span class="chip" style="background:#e6f6ea;color:#1f7a45;${pop(lt, 3.8)}">소화가 잘돼요</span>
     </div>`;
-  return benefitFrame(lt, '02', '식이섬유', '장 건강 & 쾌변', '#9be15d', visual);
+  return benefitFrame(lt, '02', '식이섬유', '#9be15d', 'underwater.jpg', '장 건강 & 쾌변', visual);
 }
 
 function sDiet(lt) {
-  // Needle starts at "high" and swings down to "low" with a springy settle.
-  const x = P(lt, 1.2, 3.2);
+  const x = P(lt, 1.3, 3.3);
   const spring = x <= 0 ? 0 : 1 - Math.exp(-5 * x) * Math.cos(x * 12);
-  const ang = 70 - 130 * spring; // degrees from vertical: +70 high → -60 low
-  const cx = 450, cy = 470, R = 300;
+  const ang = 70 - 130 * spring;
+  const cx = 480, cy = 300, R = 220;
   const arc = (a0, a1, col) => {
     const p = a => [cx + R * Math.sin(a * Math.PI / 180), cy - R * Math.cos(a * Math.PI / 180)];
     const [x0, y0] = p(a0), [x1, y1] = p(a1);
-    return `<path d="M${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}" stroke="${col}" stroke-width="60" fill="none"/>`;
+    return `<path d="M${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}" stroke="${col}" stroke-width="48" fill="none"/>`;
   };
   const low = P(lt, 3.0, 3.4);
-  const tri = (up, col) => `<svg viewBox="0 0 40 40" width="46" height="46"><path d="${up ? 'M20 4 L38 36 H2Z' : 'M20 36 L38 4 H2Z'}" fill="${col}"/></svg>`;
+  const tri = (up, col) => `<svg viewBox="0 0 40 40" width="40" height="40"><path d="${up ? 'M20 4 L38 36 H2Z' : 'M20 36 L38 4 H2Z'}" fill="${col}"/></svg>`;
   const visual = `
-    <svg class="abs" style="left:0;top:0" width="900" height="760">
+    <svg class="abs" style="left:0;top:0" width="960" height="540">
       ${arc(-90, -30, '#43b86a')}${arc(-30, 30, '#ffd24a')}${arc(30, 90, '#ff7a59')}
-      <text x="${cx - 330}" y="${cy + 60}" font-size="36" font-weight="900" fill="#43b86a" font-family="Noto KR">LOW</text>
-      <text x="${cx + 250}" y="${cy + 60}" font-size="36" font-weight="900" fill="#ff7a59" font-family="Noto KR">HIGH</text>
-      <g transform="rotate(${ang} ${cx} ${cy})">
-        <path d="M${cx - 16} ${cy} L${cx} ${cy - 250} L${cx + 16} ${cy}Z" fill="#12323a"/>
-      </g>
-      <circle cx="${cx}" cy="${cy}" r="34" fill="#12323a"/><circle cx="${cx}" cy="${cy}" r="12" fill="#fff"/>
+      <text x="${cx - 250}" y="${cy + 55}" font-size="32" font-weight="900" fill="#43b86a" font-family="Noto KR">LOW</text>
+      <text x="${cx + 180}" y="${cy + 55}" font-size="32" font-weight="900" fill="#ff7a59" font-family="Noto KR">HIGH</text>
+      <g transform="rotate(${ang} ${cx} ${cy})"><path d="M${cx - 14} ${cy} L${cx} ${cy - 185} L${cx + 14} ${cy}Z" fill="#12323a"/></g>
+      <circle cx="${cx}" cy="${cy}" r="28" fill="#12323a"/><circle cx="${cx}" cy="${cy}" r="10" fill="#fff"/>
     </svg>
-    <div class="abs center bhs" style="top:520px;font-size:74px;color:#1f7a45;opacity:${low};transform:scale(${.7 + .3 * eb(low)})">저칼로리!</div>
-    <div class="abs" style="left:70px;right:70px;top:640px;display:flex;justify-content:space-between;font-size:42px;font-weight:900">
+    <div class="abs center bhs" style="top:345px;font-size:64px;color:#1f7a45;opacity:${low};transform:scale(${.7 + .3 * eb(low)})">저칼로리!</div>
+    <div class="abs" style="left:80px;right:80px;top:450px;display:flex;justify-content:space-between;font-size:40px;font-weight:900">
       <span style="display:flex;align-items:center;gap:12px;${slideX(lt, 3.6, .5, -120)}">포만감 ${tri(true, '#43b86a')}</span>
       <span style="display:flex;align-items:center;gap:12px;${slideX(lt, 4.0, .5, 120)}">칼로리 ${tri(false, '#ff7a59')}</span>
     </div>`;
-  return benefitFrame(lt, '03', '저칼로리', '다이어트 식단에 딱', '#ffd24a', visual);
+  return benefitFrame(lt, '03', '저칼로리', '#ffd24a', 'product.jpg', '갯푸른 간편 매생이 블록', visual, '50% 60%');
 }
 
 function sHangover(lt) {
-  let steam = '';
-  for (let i = 0; i < 3; i++) {
-    const x = 330 + i * 110;
-    let d = `M${x} 330`;
-    for (let k = 1; k <= 10; k++) d += ` L${x + Math.sin(k * .9 + lt * 4 + i) * 16} ${330 - k * 22}`;
-    steam += `<path d="${d}" stroke="#b9c9c5" stroke-width="12" fill="none" stroke-linecap="round" opacity="${.6 * P(lt, 1.6, 2.2)}"/>`;
-  }
-  let strands = '';
-  for (let i = 0; i < 9; i++) {
-    const x = 250 + i * 50;
-    strands += `<path d="M${x} 380 q20 ${14 + Math.sin(lt * 3 + i) * 6} 40 0" stroke="#2d8f4e" stroke-width="9" fill="none" stroke-linecap="round"/>`;
-  }
-  // Tiny molecule for 아스파라긴산.
-  const mol = [[0, 0], [70, -40], [140, 0], [140, 80], [70, 120], [0, 80], [210, -40], [280, 0]];
-  const links = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [2, 6], [6, 7]];
-  let molSvg = '';
-  const mp = P(lt, 2.6, 3.8);
-  links.forEach(([a, b], i) => { const v = P(mp, i / 8, (i + 1) / 8); if (v > 0) molSvg += `<line x1="${mol[a][0]}" y1="${mol[a][1]}" x2="${mol[a][0] + (mol[b][0] - mol[a][0]) * v}" y2="${mol[a][1] + (mol[b][1] - mol[a][1]) * v}" stroke="#58a8ff" stroke-width="8"/>`; });
-  mol.forEach((p, i) => { const v = P(mp, i / 9, i / 9 + .2); molSvg += `<circle cx="${p[0]}" cy="${p[1]}" r="${16 * eb(v)}" fill="${i % 3 ? '#58a8ff' : '#ff7a59'}"/>`; });
+  const mol = (ox, oy, sc, col, a0) => {
+    const pts = [[0, 0], [60, -34], [120, 0], [120, 70], [60, 104], [0, 70], [180, -34], [240, 0]];
+    const links = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [2, 6], [6, 7]];
+    const mp = P(lt, a0, a0 + 1.1);
+    let g = '';
+    links.forEach(([a, b], i) => { const v = P(mp, i / 8, (i + 1) / 8); if (v > 0) g += `<line x1="${pts[a][0]}" y1="${pts[a][1]}" x2="${pts[a][0] + (pts[b][0] - pts[a][0]) * v}" y2="${pts[a][1] + (pts[b][1] - pts[a][1]) * v}" stroke="${col}" stroke-width="8"/>`; });
+    pts.forEach((p, i) => { const v = P(mp, i / 9, i / 9 + .2); g += `<circle cx="${p[0]}" cy="${p[1]}" r="${15 * eb(v)}" fill="${i % 3 ? col : '#ff7a59'}"/>`; });
+    return `<g transform="translate(${ox} ${oy}) scale(${sc})">${g}</g>`;
+  };
   const visual = `
-    <svg class="abs" style="left:0;top:0" width="900" height="760">
-      ${steam}
-      <g style="${pop(lt, 1.0, .6)};transform-origin:450px 440px">
-        <ellipse cx="450" cy="380" rx="260" ry="46" fill="#1d6b45"/>
-        <path d="M190 380 Q200 560 450 560 Q700 560 710 380Z" fill="#f4efe4"/>
-        <path d="M190 380 Q200 560 450 560 Q700 560 710 380Z" fill="none" stroke="#d9cfba" stroke-width="6"/>
-        <rect x="370" y="556" width="160" height="26" rx="10" fill="#d9cfba"/>
-        ${strands}
-        <circle cx="330" cy="372" r="16" fill="#e8e0cf"/><circle cx="560" cy="378" r="14" fill="#e8e0cf"/>
-      </g>
-      <g transform="translate(560 120) scale(.8)" opacity="${cl(mp * 3)}">${molSvg}</g>
-    </svg>
-    <div class="abs" style="left:520px;top:250px;font-size:34px;font-weight:900;color:#3777c9;${rise(lt, 3.6)}">아스파라긴산</div>
-    <div class="abs" style="left:60px;top:90px;${pop(lt, 4.2)}"><span class="chip" style="background:#ffe7a6;color:#8a5a00">해장국 추천</span></div>
-    <div class="abs center" style="top:640px;font-size:40px;font-weight:700;color:#4a5e57;${rise(lt, 4.6)}">굴과 함께 끓인 <b style="color:var(--green)">매생이 굴국</b>으로 속 편하게</div>`;
-  return benefitFrame(lt, '04', '숙취 해소', '해장 음식으로 인기', '#58c7ff', visual);
+    <svg class="abs" style="left:0;top:0" width="960" height="540">${mol(110, 170, 1, '#43b86a', 1.3)}${mol(560, 170, 1, '#58a8ff', 1.8)}</svg>
+    <div class="abs" style="left:110px;top:310px;font-size:44px;font-weight:900;color:#1f7a45;${rise(lt, 2.2)}">알긴산</div>
+    <div class="abs" style="left:560px;top:310px;font-size:44px;font-weight:900;color:#3777c9;${rise(lt, 2.6)}">아스파라긴산</div>
+    <div class="abs" style="right:40px;top:28px;${pop(lt, 3.0)}"><span class="chip" style="background:#ffe7a6;color:#8a5a00">해장국 추천</span></div>
+    <div class="abs center" style="top:420px;font-size:38px;font-weight:700;color:#4a5e57;${rise(lt, 3.4)}">굴과 함께 끓인 <b style="color:var(--green)">매생이국</b>으로 속 편하게</div>`;
+  return benefitFrame(lt, '04', '숙취 해소', '#58c7ff', 'soup.jpg', '뜨끈한 매생이국', visual);
 }
 
 function sImmune(lt) {
-  const badges = ['비타민 A', '비타민 C', '엽록소', '무기질'];
-  const cols = ['#ff9f43', '#ffcf3a', '#43b86a', '#58a8ff'];
+  const badges = ['비타민 A', '비타민 C', '무기질', '엽록소'];
+  const cols = ['#ff9f43', '#ffcf3a', '#58a8ff', '#43b86a'];
   let orbit = '';
   badges.forEach((b, i) => {
     const a = i / 4 * Math.PI * 2 + lt * .8;
-    const x = 450 + Math.cos(a) * 300, y = 330 + Math.sin(a) * 180;
-    const v = P(lt, 1.6 + i * .25, 2.1 + i * .25);
-    orbit += `<div class="abs" style="left:${x - 110}px;top:${y - 44}px;width:220px;text-align:center;opacity:${cl(v * 3)};transform:scale(${eb(v)});z-index:${Math.sin(a) > 0 ? 3 : 1}">
-      <span class="chip" style="background:${cols[i]};color:#fff;font-size:38px;padding:14px 26px;box-shadow:0 8px 20px rgba(0,0,0,.15)">${b}</span></div>`;
+    const x = 480 + Math.cos(a) * 320, y = 230 + Math.sin(a) * 140;
+    const v = P(lt, 1.5 + i * .25, 2.0 + i * .25);
+    orbit += `<div class="abs" style="left:${x - 110}px;top:${y - 40}px;width:220px;text-align:center;opacity:${cl(v * 3)};transform:scale(${eb(v)});z-index:${Math.sin(a) > 0 ? 3 : 1}">
+      <span class="chip" style="background:${cols[i]};color:#fff;font-size:36px;padding:12px 24px;box-shadow:0 8px 20px rgba(0,0,0,.15)">${b}</span></div>`;
   });
-  let sp = '';
-  for (let i = 0; i < 6; i++) {
-    const s = 40 + 26 * Math.max(0, Math.sin(lt * 3 + i * 1.3));
-    sp += `<div class="abs" style="left:${120 + rnd(i + 3) * 660}px;top:${520 + rnd(i + 7) * 80}px;width:${s}px;height:${s}px;opacity:${P(lt, 3, 3.5) * .9}">${ICON.sparkle(i % 2 ? '#ffd24a' : '#9be15d')}</div>`;
-  }
   const visual = `
-    <svg class="abs" style="left:0;top:0" width="900" height="760"><ellipse cx="450" cy="330" rx="300" ry="180" fill="none" stroke="#d9cfba" stroke-width="4" stroke-dasharray="14 16"/></svg>
-    <div class="abs" style="left:325px;top:200px;width:250px;height:260px;z-index:2;${pop(lt, 1.0, .7)}">${ICON.shield('#43b86a')}</div>
-    ${orbit}${sp}
-    <div class="abs center" style="top:640px;font-size:40px;font-weight:700;color:#4a5e57;${rise(lt, 3.6)}">몸은 <b style="color:var(--green)">튼튼</b>하게, 피부는 <b style="color:#ff9f43">촉촉</b>하게</div>`;
-  return benefitFrame(lt, '05', '면역 · 피부', '비타민 & 무기질 가득', '#c9a7ff', visual);
+    <svg class="abs" style="left:0;top:0" width="960" height="540"><ellipse cx="480" cy="230" rx="320" ry="140" fill="none" stroke="#d9cfba" stroke-width="4" stroke-dasharray="14 16"/></svg>
+    <div class="abs" style="left:385px;top:130px;width:190px;height:200px;z-index:2;${pop(lt, 1.0, .7)}">${ICON.shield('#43b86a')}</div>
+    ${orbit}
+    <div class="abs center" style="top:430px;font-size:38px;font-weight:700;color:#4a5e57;${rise(lt, 3.4)}">몸은 <b style="color:var(--green)">튼튼</b>하게, 피부는 <b style="color:#ff9f43">촉촉</b>하게</div>`;
+  return benefitFrame(lt, '05', '면역 · 피부', '#c9a7ff', 'jaegi.jpg', '짙은 초록의 영양', visual);
 }
 
 function sTip(lt) {
-  const menus = ['매생이 굴국', '매생이 떡국', '매생이전', '매생이 칼국수'];
-  let chips = '';
-  menus.forEach((m, i) => {
-    chips += `<div style="${pop(lt, .9 + i * .25)}"><span class="chip" style="background:#fff;color:var(--ink);font-size:44px;padding:20px 40px;box-shadow:0 10px 24px rgba(0,0,0,.2)">${m}</span></div>`;
-  });
+  const menus = [['eggroll.jpg', '매생이 계란말이'], ['tteokguk.jpg', '매생이 떡국'], ['soupcup.jpg', '매생이 수프'], ['soup.jpg', '매생이국']];
+  let grid = '';
+  menus.forEach(([src, label], i) => grid += pcard(src, 60 + (i % 2) * 490, 170 + Math.floor(i / 2) * 350, 470, 330, lt, .4 + i * .2, label));
   const warn = eo(P(lt, 3.3, 3.9));
   const temp = eio(P(lt, 3.9, 5.4));
   const shake = lt > 5.2 && lt < 6.2 ? Math.sin(lt * 60) * 6 : 0;
   return `
-    <div class="abs center" style="top:40px"><span class="bhs" style="display:inline-block;font-size:110px;color:#fff;${rise(lt, .1)}">맛있게 먹는 <span style="color:var(--sun)">꿀팁</span></span></div>
-    <div class="abs" style="left:90px;right:90px;top:220px;display:flex;flex-wrap:wrap;gap:26px;justify-content:center">${chips}</div>
-    <div class="abs" style="left:110px;top:1080px;${pop(lt, 4.2)}">${mascot(lt, 150, { mouth: 'o' })}</div>
-    <div class="abs card" style="left:90px;top:520px;width:900px;height:560px;opacity:${warn};transform:translateY(${(1 - warn) * 200}px) translateX(${shake}px);background:#fff3e6">
+    <div class="abs center" style="top:10px"><span class="bhs" style="display:inline-block;font-size:110px;color:#fff;${rise(lt, .1)}">맛있게 먹는 <span style="color:var(--sun)">꿀팁</span></span></div>
+    ${grid}
+    <div class="abs card" style="left:60px;top:640px;width:960px;height:540px;opacity:${warn};transform:translateY(${(1 - warn) * 200}px) translateX(${shake}px);background:#fff3e6">
       <div style="position:absolute;left:50px;top:40px;font-size:56px;font-weight:900;color:#e5533d">앗, 뜨거워!</div>
-      <div style="position:absolute;left:50px;top:130px;width:520px;font-size:40px;font-weight:700;line-height:1.5">매생이는 김이 잘 안 나서<br>겉보기보다 <b style="color:#e5533d">훨씬 뜨거워요.</b><br>호호 불어서 천천히!</div>
-      <div style="position:absolute;left:50px;bottom:50px;right:250px;font-size:36px;font-weight:700;color:#8a6a4a;border-left:10px solid #ffb199;padding-left:24px;opacity:${P(lt, 5.4, 5.9)}">"미운 사위에게 매생이국 준다"<br><span style="font-size:28px">— 남도 속담</span></div>
-      <svg style="position:absolute;right:70px;top:60px" width="130" height="440" viewBox="0 0 130 440">
+      <div style="position:absolute;left:50px;top:130px;width:560px;font-size:40px;font-weight:700;line-height:1.5">매생이는 김이 잘 안 나서<br>겉보기보다 <b style="color:#e5533d">훨씬 뜨거워요.</b><br>호호 불어서 천천히!</div>
+      <div style="position:absolute;left:50px;bottom:44px;right:260px;font-size:36px;font-weight:700;color:#8a6a4a;border-left:10px solid #ffb199;padding-left:24px;opacity:${P(lt, 5.4, 5.9)}">"미운 사위에게 매생이국 준다"<br><span style="font-size:28px">— 남도 속담</span></div>
+      <svg style="position:absolute;right:80px;top:60px" width="130" height="440" viewBox="0 0 130 440">
         <rect x="40" y="10" width="50" height="340" rx="25" fill="#f0e2d4" stroke="#d9b9a0" stroke-width="6"/>
         <rect x="52" y="${330 - 300 * temp}" width="26" height="${300 * temp + 20}" rx="13" fill="#ff5a3c"/>
         <circle cx="65" cy="385" r="48" fill="#ff5a3c"/>
@@ -528,7 +471,7 @@ function sTip(lt) {
 
 function sOutro(lt) {
   const items = [
-    ['철분 · 칼슘', ICON.drop('#ff6b6b')],
+    ['무기질 가득', ICON.drop('#ff6b6b')],
     ['식이섬유', ICON.gut('#43b86a')],
     ['저칼로리', ICON.flame('#ffb020')],
     ['숙취 해소', ICON.leaf('#2d9ad8')],
@@ -536,49 +479,42 @@ function sOutro(lt) {
   ];
   let rows = '';
   items.forEach(([label, icon], i) => {
-    const a = .4 + i * .22;
-    rows += `<div style="display:flex;align-items:center;gap:24px;height:96px;${slideX(lt, a, .45, -160)}">
-      <div style="width:70px;height:70px">${icon}</div>
-      <div style="flex:1;font-size:46px;font-weight:900">${label}</div>
-      <div style="width:66px;height:66px;${pop(lt, a + .35, .4)}">${ICON.check('#43b86a')}</div></div>`;
+    const a = .4 + i * .2;
+    rows += `<div style="display:flex;align-items:center;gap:22px;height:76px;${slideX(lt, a, .45, -160)}">
+      <div style="width:58px;height:58px">${icon}</div>
+      <div style="flex:1;font-size:42px;font-weight:900">${label}</div>
+      <div style="width:56px;height:56px;${pop(lt, a + .35, .4)}">${ICON.check('#43b86a')}</div></div>`;
   });
-  const btn = (a, bg, icon, label) => `<div style="display:flex;align-items:center;gap:14px;background:${bg};color:#fff;border-radius:999px;padding:18px 40px;font-size:42px;font-weight:900;${pop(lt, a)}"><span style="width:50px;height:50px">${icon}</span>${label}</div>`;
-  const press = lt > 3.6 && lt < 3.9 ? .9 : 1;
   return `
-    <div class="abs center" style="top:30px"><span class="bhs" style="display:inline-block;font-size:110px;color:#fff;${rise(lt, .05)}">오늘의 <span style="color:var(--lime)">요약</span></span></div>
-    <div class="abs card" style="left:110px;top:200px;width:860px;padding:30px 50px;box-sizing:border-box;${rise(lt, .2, .5, 100)}">${rows}</div>
-    <div class="abs" style="left:0;right:0;top:830px;display:flex;justify-content:center;gap:30px">
-      <div style="transform:scale(${press})">${btn(2.2, '#ff4d4d', ICON.thumb('#fff'), '좋아요')}</div>
-      ${btn(2.5, '#12323a', ICON.bell('#ffd24a'), '구독')}
-    </div>
-    <div class="abs" style="right:110px;top:960px;${pop(lt, 1.6)}">${mascot(lt, 200, { wave: true })}</div>
-    <div class="abs" style="left:110px;top:1010px;width:600px;font-size:26px;line-height:1.5;opacity:${.85 * P(lt, 2.8, 3.3)}">※ 효능은 개인에 따라 다를 수 있으며,<br>질병의 치료나 의학적 조언을 대신하지 않습니다.</div>`;
+    <div class="abs" style="left:80px;top:10px"><span class="bhs" style="display:inline-block;font-size:100px;color:#fff;${rise(lt, .05)}">오늘의 <span style="color:var(--lime)">요약</span></span></div>
+    <div class="abs card" style="left:60px;top:150px;width:560px;padding:24px 40px;box-sizing:border-box;${rise(lt, .2, .5, 100)}">${rows}</div>
+    <div class="abs" style="left:640px;top:150px;${pop(lt, .9, .7)}">${chara(lt, 440, { wave: true })}</div>
+    ${pcard('product.jpg', 60, 640, 960, 420, lt, 1.4, '갯푸른 간편 매생이', '50% 55%')}
+    <div class="abs center" style="top:1080px;${rise(lt, 2.2)}"><span style="font-size:40px;font-weight:900">바다를 가득 담은 <span style="color:var(--lime)">갯푸른</span> 전라도 매생이</span></div>
+    <div class="abs center" style="top:1150px;font-size:24px;opacity:${.8 * P(lt, 2.6, 3.1)}">※ 효능은 개인에 따라 다를 수 있으며, 질병의 치료나 의학적 조언을 대신하지 않습니다.</div>`;
 }
 
 // ---------------------------- Compose ------------------------------
-// Optional real photos: drop photos/<scene id>.jpg (intro, what, b1..b5, tip, outro).
-// Missing files are skipped and the illustrated sea background shows instead.
-const PHOTO_OK = {};
-window.photosReady = Promise.all(SCENES.map(sc => new Promise(res => {
-  const img = new Image();
-  img.onload = () => { PHOTO_OK[sc.id] = img.src; res(); };
-  img.onerror = () => res();
-  img.src = `photos/${sc.id}.jpg`;
+// Blurred full-bleed photo per scene behind the cards (photos/ from 갯푸른).
+const SCENE_BG = { intro: 'farm.jpg', what: 'farm2.jpg', b1: 'hand.jpg', b2: 'underwater.jpg', b3: 'product.jpg',
+  b4: 'soup.jpg', b5: 'jaegi.jpg', tip: 'eggroll.jpg', outro: 'product.jpg' };
+const ALL_PHOTOS = ['farm.jpg', 'farm2.jpg', 'harvest.jpg', 'hand.jpg', 'underwater.jpg', 'product.jpg', 'soup.jpg', 'jaegi.jpg',
+  'eggroll.jpg', 'tteokguk.jpg', 'soupcup.jpg', 'gaetpureun.png'];
+window.photosReady = Promise.all(ALL_PHOTOS.map(f => new Promise(res => {
+  const img = new Image(); img.onload = img.onerror = () => res(); img.src = `photos/${f}`;
 })));
 function photoLayer(t) {
   let html = '';
   SCENES.forEach((sc, i) => {
-    const src = PHOTO_OK[sc.id];
-    if (!src) return;
+    const src = SCENE_BG[sc.id];
     const lt = t - sc.a, d = sc.b - sc.a;
-    if (lt < -0.5 || lt > d + 0.5) return;
-    const op = Math.min(P(lt, -0.3, 0.3), 1 - P(lt, d - 0.2, d + 0.4), sc.id === 'outro' ? 1 : 1);
+    if (!src || lt < -0.5 || lt > d + 0.5) return;
+    const op = Math.min(P(lt, -0.3, 0.3), 1 - P(lt, d - 0.2, d + 0.4));
     if (op <= 0) return;
-    const k = P(lt, -0.5, d + 0.5);
-    const dir = i % 2 ? 1 : -1;
+    const k = P(lt, -0.5, d + 0.5), dir = i % 2 ? 1 : -1;
     html += `<div class="abs" style="inset:0;overflow:hidden;opacity:${op}">
-      <img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(${1.08 + .1 * k}) translate(${dir * (k - .5) * 30}px, ${(.5 - k) * 20}px)">
-      <div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(4,26,32,.55) 0%,rgba(4,26,32,.35) 40%,rgba(4,26,32,.7) 100%)"></div></div>`;
+      <img src="photos/${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(22px) brightness(.55) saturate(1.15);transform:scale(${1.25 + .08 * k}) translate(${dir * (k - .5) * 30}px, 0)">
+      <div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(4,26,32,.35) 0%,rgba(4,26,32,.15) 40%,rgba(4,26,32,.6) 100%)"></div></div>`;
   });
   return html;
 }
