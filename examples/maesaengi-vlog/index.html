@@ -50,15 +50,16 @@ const slideX = (t, a, d = .6, dist = 200) => { const x = eo(P(t, a, a + d)); ret
 
 // ---------------------------- Timeline -----------------------------
 const SCENES = [
-  { id: 'intro', a: 0,    b: 5,    fn: sIntro },
-  { id: 'what',  a: 5,    b: 11,   fn: sWhat },
-  { id: 'b1',    a: 11,   b: 18.5, fn: sIron },
-  { id: 'b2',    a: 18.5, b: 26,   fn: sFiber },
-  { id: 'b3',    a: 26,   b: 33,   fn: sDiet },
-  { id: 'b4',    a: 33,   b: 40,   fn: sHangover },
-  { id: 'b5',    a: 40,   b: 47,   fn: sImmune },
-  { id: 'tip',   a: 47,   b: 54.5, fn: sTip },
-  { id: 'outro', a: 54.5, b: 60,   fn: sOutro },
+  { id: 'intro',   a: 0,    b: 4.5,  fn: sIntro },
+  { id: 'what',    a: 4.5,  b: 10,   fn: sWhat },
+  { id: 'process', a: 10,   b: 17,   fn: sProcess },
+  { id: 'b1',      a: 17,   b: 23,   fn: sIron },
+  { id: 'b2',      a: 23,   b: 29,   fn: sFiber },
+  { id: 'b3',      a: 29,   b: 35,   fn: sDiet },
+  { id: 'b4',      a: 35,   b: 41,   fn: sHangover },
+  { id: 'b5',      a: 41,   b: 47,   fn: sImmune },
+  { id: 'tip',     a: 47,   b: 53.5, fn: sTip },
+  { id: 'outro',   a: 53.5, b: 60,   fn: sOutro },
 ];
 
 const CAPTIONS = window.CAPTIONS.map(c => [c.a, c.b, c.text]);
@@ -311,6 +312,40 @@ function sWhat(lt) {
     </div>`;
 }
 
+
+// 갯푸른 가공 과정 (회사소개서 14쪽): five steps with real factory photos.
+function sProcess(lt) {
+  const steps = [
+    ['proc-harvest.jpg', '수확', '가장 부드러운 <b>초살 매생이</b>를<br>12월~1월에 수확'],
+    ['proc-wash.jpg', '세척', '<b>해수·상수도</b> 2단계 세척<br>1차 이물질 제거'],
+    ['proc-sort.jpg', '이물질 선별', '수작업·원심분리기로<br>이물질 <b>95% 이상</b> 선별'],
+    ['proc-freeze.jpg', '급속냉동', '<b>-30~-40°C</b> 급속냉동으로<br>신선도 유지'],
+    ['blocks.jpg', '제품 생산', '<b>진공동결 건조</b> 블록<br>냉동식품 · 가정간편식'],
+  ];
+  const T0 = .5, STEP = .95, ROW = 206, TOP = 150;
+  const active = Math.min(4, Math.floor(cl((lt - T0) / STEP, 0, 4.99)));
+  const line = eio(P(lt, T0, T0 + STEP * 4 + .4));
+  let rows = '';
+  steps.forEach(([img, name, desc], i) => {
+    const a0 = T0 + i * STEP, e = eo(P(lt, a0, a0 + .55));
+    const on = lt >= a0 && i === active;
+    rows += `<div class="abs" style="left:60px;top:${TOP + i * ROW}px;width:960px;height:186px;display:flex;align-items:center;gap:26px;opacity:${e};transform:translateX(${(1 - e) * 140}px)">
+      <div style="flex:none;width:76px;height:76px;border-radius:50%;background:${on ? 'var(--lime)' : '#fff'};color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;box-shadow:0 0 0 ${on ? 10 : 0}px rgba(155,225,93,.35);z-index:2">${i + 1}</div>
+      <div style="flex:none;width:250px;height:176px;border-radius:24px;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,.4)">
+        <img src="photos/${img}" style="width:100%;height:100%;object-fit:cover;transform:scale(${1.05 + .08 * P(lt, a0, a0 + 5)})"></div>
+      <div style="flex:1;word-break:keep-all">
+        <div style="font-size:48px;font-weight:900;color:${on ? 'var(--lime)' : '#fff'}">${name}</div>
+        <div style="font-size:31px;font-weight:500;line-height:1.35;margin-top:6px;color:rgba(255,255,255,.88)">${desc.replace(/<b>/g, '<b style="color:#d4ff8a;font-weight:900">')}</div>
+      </div></div>`;
+  });
+  return `
+    <div class="abs" style="left:80px;top:10px;${rise(lt, .05)}"><span class="bhs" style="font-size:96px;color:#fff">갯푸른 <span style="color:var(--sun)">가공 과정</span></span></div>
+    <div class="abs" style="left:97px;top:${TOP + 93}px;width:6px;height:${ROW * 4}px;background:rgba(255,255,255,.2);border-radius:3px">
+      <div style="width:100%;height:${line * 100}%;background:var(--lime);border-radius:3px"></div></div>
+    ${rows}
+    <div class="abs" style="right:60px;top:1200px;font-size:24px;opacity:${.75 * P(lt, 4.6, 5)}">자료: 갯푸른(삼덕영어조합법인) 제조공정</div>`;
+}
+
 // Shared frame for the five benefit scenes: header, photo with tag, infographic card.
 function benefitFrame(lt, no, title, color, photo, tag, visual, pos) {
   const numX = eo(P(lt, .05, .6));
@@ -496,10 +531,11 @@ function sOutro(lt) {
 
 // ---------------------------- Compose ------------------------------
 // Blurred full-bleed photo per scene behind the cards (photos/ from 갯푸른).
-const SCENE_BG = { intro: 'farm.jpg', what: 'farm2.jpg', b1: 'hand.jpg', b2: 'underwater.jpg', b3: 'product.jpg',
+const SCENE_BG = { intro: 'farm.jpg', what: 'farm2.jpg', process: 'proc-harvest.jpg', b1: 'hand.jpg', b2: 'underwater.jpg', b3: 'product.jpg',
   b4: 'soup.jpg', b5: 'jaegi.jpg', tip: 'eggroll.jpg', outro: 'product.jpg' };
 const ALL_PHOTOS = ['farm.jpg', 'farm2.jpg', 'harvest.jpg', 'hand.jpg', 'underwater.jpg', 'product.jpg', 'soup.jpg', 'jaegi.jpg',
-  'eggroll.jpg', 'tteokguk.jpg', 'soupcup.jpg', 'gaetpureun.png'];
+  'eggroll.jpg', 'tteokguk.jpg', 'soupcup.jpg', 'gaetpureun.png',
+  'proc-harvest.jpg', 'proc-wash.jpg', 'proc-sort.jpg', 'proc-freeze.jpg', 'blocks.jpg'];
 window.photosReady = Promise.all(ALL_PHOTOS.map(f => new Promise(res => {
   const img = new Image(); img.onload = img.onerror = () => res(); img.src = `photos/${f}`;
 })));
