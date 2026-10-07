@@ -224,3 +224,54 @@ def test_corrupt_state_is_set_aside(tmp_path):
     path.write_text("{not json", encoding="utf-8")
     assert inbox.load_state(tmp_path) == {"version": 1}
     assert path.with_suffix(".corrupt.json").exists()
+
+
+# --- macOS Photos export (osxphotos) --------------------------------------
+
+def fake_osxphotos(tmp_path: Path, monkeypatch, exit_code: int = 0) -> Path:
+    """Stand-in osxphotos that drops one dated screenshot and logs its argv."""
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    log = tmp_path / "osxphotos.log"
+    script = bindir / "osxphotos"
+    script.write_text(
+        "#!/bin/sh\n"
+        f'echo "$@" >> "{log}"\n'
+        f"[ {exit_code} -ne 0 ] && {{ echo 'boom' >&2; exit {exit_code}; }}\n"
+        'touch "$2/$(date +%Y-%m-%d) 09.30.15.png"\n'
+    )
+    script.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bindir}{os.pathsep}{os.environ['PATH']}")
+    return log
+
+
+def test_photos_export_feeds_screenshots(setup, tmp_path, monkeypatch):
+    out, _, _, settings = setup
+    settings = {**settings, "DAILY_PHOTOS": "true"}
+    log = fake_osxphotos(tmp_path, monkeypatch)
+
+    report, _ = daily.run(make_args(out, list=True, only=["screenshots"]), settings)
+    assert not log.exists()  # --list never exports
+
+    report, code = daily.run(make_args(out, only=["screenshots"], since="2026-09-01"), settings)
+    assert code == 0 and report["errors"] == []
+    argv = log.read_text().split()
+    assert argv[:2] == ["export", str(out / "inbox" / "photos-screenshots")]
+    assert "--screenshot" in argv and "--update" in argv
+    assert argv[argv.index("--from-date") + 1] == "2026-09-01"
+    today = datetime.now().date().isoformat()
+    shot = report["days"][today]["screenshots"][0]
+    assert shot["time"] == "09:30" and shot["path"].endswith(f"{today} 09.30.15.png")
+
+
+def test_photos_export_errors_are_reported(setup, tmp_path, monkeypatch):
+    out, _, _, settings = setup
+    settings = {**settings, "DAILY_PHOTOS": "1"}
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    report, _ = daily.run(make_args(out, only=["screenshots"]), settings)
+    assert report["errors"][0]["error"] == "osxphotos_missing"
+
+    fake_osxphotos(tmp_path, monkeypatch, exit_code=1)
+    report, _ = daily.run(make_args(out, only=["screenshots"]), settings)
+    assert report["errors"][0]["error"] == "photos_export_failed"
+    assert "boom" in report["errors"][0]["detail"]

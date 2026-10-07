@@ -46,6 +46,7 @@ Requirements: `ffmpeg`/`ffprobe` (for recordings). A Whisper key (`GROQ_API_KEY`
 | `DAILY_RECORDINGS` | Recording folder(s) | Mac Voice Memos folder if present |
 | `DAILY_KAKAO` | Folder(s) where KakaoTalk exports are saved | `iCloud Drive/Daily Inbox/kakao` on a Mac, else `<DAILY_DIR>/inbox/kakao` |
 | `DAILY_SCREENSHOTS` | Screenshot folder(s) | `iCloud Drive/Daily Inbox/screenshots` on a Mac, else `<DAILY_DIR>/inbox/screenshots` |
+| `DAILY_PHOTOS` | `true` → pull screenshots out of the Mac Photos library each run (needs `osxphotos`) | off |
 | `DAILY_LANGUAGE` | Whisper language hint, e.g. `ko` | auto-detect |
 
 Separate multiple folders with `:` (`;` on Windows). The older `VOICE_NOTES_DIR` / `VOICE_NOTES_SOURCE` / `VOICE_NOTES_LANGUAGE` names still work.
@@ -62,10 +63,14 @@ If the manifest shows `output_dir_configured: false`, this is the first run. Ask
 - `.txt`, `.csv` and `.zip` exports from Android, iOS, Windows and Mac (Korean or English UI) are all understood. Photos sent to the chat appear only as "사진".
 
 **Screenshots**
-- *iPhone*: a Shortcuts automation copies the day's screenshots into iCloud Drive. Shortcuts → 자동화 → `+` → 특정 시간 (e.g. 23:30, 매일, **즉시 실행**) → new shortcut with two actions: **사진 찾기** (filters: *스크린샷임* is true, *촬영일* is *오늘*) → **파일 저장** (iCloud Drive/Daily Inbox/screenshots, *저장 위치 묻기* off). Allow photo access the first time it runs.
+- *iPhone + Mac (recommended)*: with iCloud Photos on, every iPhone screenshot is already in the Mac's Photos library (the 스크린샷 media type). Set `DAILY_PHOTOS=true` and install [osxphotos](https://github.com/RhetTbull/osxphotos) (`brew install pipx && pipx install osxphotos`). Each run then exports new screenshots into `<DAILY_DIR>/inbox/photos-screenshots/`, named by capture time, so each one lands on the right day. Nothing to do on the phone. Checks:
+  - The app running the agent needs Full Disk Access (the Photos library is protected).
+  - iCloud Photos must actually be syncing. If the iPhone's 사진 → 모음 shows **동기화가 일시 정지됨** (low battery or Low Power Mode), tap it to resume, or new screenshots won't reach the Mac.
+  - `photos_export_failed` usually means Full Disk Access is missing or Photos needs to be opened once.
+- *iPhone without that*: a Shortcuts automation copies the day's screenshots into iCloud Drive. Shortcuts → 자동화 → `+` → 특정 시간 (e.g. 23:30, 매일, **즉시 실행**) → actions: **사진 찾기** (*스크린샷임* is true, *촬영일* is *오늘*) → **각 항목을 반복** { **날짜 포맷** of the item's *촬영일* with custom format `yyyy-MM-dd HH.mm.ss` → **이름 변경** the item to that text → **파일 저장** to iCloud Drive/Daily Inbox/screenshots, *저장 위치 묻기* off }. The rename keeps the capture time. Without it every screenshot is dated by when the shortcut ran. Use either this or `DAILY_PHOTOS`, not both, or screenshots get collected twice.
 - *Galaxy*: sync `DCIM/Screenshots` (or `Pictures/Screenshots`) the same way as recordings, and add that folder to `DAILY_SCREENSHOTS`. Galaxy names screenshots `Screenshot_YYYYMMDD_HHMMSS_<App>.jpg`, so you'll also know which app each came from.
 
-The first run only collects the last 7 days of KakaoTalk messages and screenshots. Pass `--since YYYY-MM-DD` to reach further back.
+The first run only collects the last 7 days of KakaoTalk messages and screenshots. Pass `--since YYYY-MM-DD` to reach further back. To organize an existing screenshot backlog by date, go a month at a time (`--only screenshots --since 2026-09-01`), because every screenshot is an image you have to look at. Each day still gets its own daily note.
 
 ## Step 1: Parse the request
 

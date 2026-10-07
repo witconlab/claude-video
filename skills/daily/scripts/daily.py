@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -120,6 +120,15 @@ def run(args: argparse.Namespace, settings: dict[str, str]) -> tuple[dict, int]:
         sources = notes.split_paths(settings.get("DAILY_SCREENSHOTS")) if not routed["screenshots"] else [Path(p).expanduser() for p in routed["screenshots"]]
         if not sources:
             sources = [default_inbox(out_dir, "screenshots")]
+        if photos_enabled(settings) and not routed["screenshots"]:
+            dest = out_dir / "inbox" / "photos-screenshots"
+            sources.append(dest)
+            if not args.list:
+                floor = (state.get("screenshots") or {}).get("floor")
+                start = since or (date.fromisoformat(floor) if floor else date.today() - timedelta(days=inbox.FIRST_RUN_DAYS))
+                err = inbox.export_photos_screenshots(dest, start)
+                if err:
+                    report["errors"].append({**err, "kind": "screenshots"})
         try:
             files = inbox._files(sources, inbox.IMAGE_EXTS)
         except PermissionError as exc:
@@ -155,6 +164,10 @@ def run(args: argparse.Namespace, settings: dict[str, str]) -> tuple[dict, int]:
         entry["note_exists"] = note.exists()
     report["days"] = dict(sorted(report["days"].items()))
     return report, code
+
+
+def photos_enabled(settings: dict[str, str]) -> bool:
+    return settings.get("DAILY_PHOTOS", "").strip().lower() in ("1", "true", "yes", "on")
 
 
 def state_needs_save(out_dir: Path) -> bool:

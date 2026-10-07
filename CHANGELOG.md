@@ -8,7 +8,7 @@ All notable changes to `/watch` are documented here.
 - **`/daily` skill** (`skills/daily/`). It turns the day's captures into local Markdown notes.
   - *Recordings*: one lecture or memo note per recording. It uses the phone's own transcript first (the iOS 18+ Voice Memos `tsrp` atom inside the `.m4a`, or a `<recording>.txt` sidecar such as a Galaxy Transcript assist export) and falls back to Whisper. Dedup is by `source:` frontmatter.
   - *KakaoTalk 나와의 채팅 exports*: Android, iOS, Windows and Mac, `.txt`/`.csv`/`.zip`, Korean or English. A high-water mark means daily full re-exports only yield new messages.
-  - *Screenshots*: from an iPhone Shortcuts automation or a synced Galaxy folder. The app name is taken from Galaxy filenames, and HEIC is converted via `sips`.
+  - *Screenshots*: exported from the Mac Photos library (`DAILY_PHOTOS=true`, via osxphotos, named by capture time), from an iPhone Shortcuts automation, or from a synced Galaxy folder. The app name is taken from Galaxy filenames, and HEIC is converted via `sips`.
   - Everything is grouped into `daily/YYYY-MM-DD.md` plus a `learning-queue.md`. Collected items stay pending in `.daily/state.json` until the model runs `daily.py --mark-noted` for that day.
   - Configure it with `DAILY_DIR`, `DAILY_RECORDINGS`, `DAILY_KAKAO`, `DAILY_SCREENSHOTS`, and `DAILY_LANGUAGE`.
 - Whisper `language` hint (`transcribe_video(..., language="ko")`) for more accurate non-English transcription.

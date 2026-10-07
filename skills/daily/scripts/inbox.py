@@ -317,6 +317,35 @@ def new_screenshots(files: list[Path], state: dict, since: date | None) -> list[
     return fresh
 
 
+# --- macOS Photos ---------------------------------------------------------
+# With iCloud Photos on, every iPhone screenshot is already in the Mac's Photos
+# library ("스크린샷" media type). osxphotos (third-party CLI) exports them with
+# the capture time in the filename, which screenshot_time() parses back.
+PHOTOS_FILENAME = "{created.strftime,%Y-%m-%d %H.%M.%S}"
+
+
+def export_photos_screenshots(dest: Path, from_date: date) -> dict | None:
+    """Export new screenshots from Photos.app into dest. Returns an error dict or None."""
+    exe = shutil.which("osxphotos")
+    if exe is None:
+        return {"error": "osxphotos_missing", "detail": "Install with: brew install pipx && pipx install osxphotos"}
+    dest.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        exe, "export", str(dest),
+        "--screenshot",
+        "--from-date", from_date.isoformat(),
+        "--filename", PHOTOS_FILENAME,
+        "--update",            # only new photos; state lives in dest/.osxphotos_export.db
+        "--download-missing",  # originals kept only in iCloud ("Optimize Mac Storage")
+        "--no-progress",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        tail = (result.stderr or result.stdout).strip().splitlines()[-5:]
+        return {"error": "photos_export_failed", "detail": " / ".join(tail)}
+    return None
+
+
 # --- State ----------------------------------------------------------------
 
 def state_path(out_dir: Path) -> Path:

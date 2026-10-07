@@ -206,7 +206,7 @@ Other knobs (passed to `scripts/watch.py`):
 
 - **Recordings** (iPhone Voice Memos, Galaxy Voice Recorder) → one note per recording: lecture notes (timestamped outline, key concepts, terms, exam points) or a memo summary (to-dos, ideas, appointments). It uses the phone's own transcript when there is one: the iOS 18+ Voice Memos transcript read straight from the `.m4a`, or a Galaxy *Transcript assist* export saved as `<recording>.txt`. Otherwise it uses Whisper, with the same key as `/watch`.
 - **KakaoTalk 나와의 채팅 exports** (`.txt`/`.csv`/`.zip` from Android, iOS, Windows, Mac). Re-export the whole chat daily; only messages newer than the last run are taken.
-- **Screenshots** from both phones (an iPhone Shortcuts automation, a synced Galaxy folder). Claude looks at each one and works out why you saved it.
+- **Screenshots** from both phones. iPhone screenshots come straight from the Mac Photos library via [osxphotos](https://github.com/RhetTbull/osxphotos) when `DAILY_PHOTOS=true`, or from an iPhone Shortcuts automation; Galaxy screenshots come from a synced folder. Claude looks at each one and works out why you saved it.
 
 Everything lands in `daily/YYYY-MM-DD.md`, sorted into 공부할 것 / 관심사 / 링크 (fetched and summarized) / 할 일 / 일정, plus a running `learning-queue.md`.
 
