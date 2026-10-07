@@ -182,4 +182,6 @@ The skill only runs when invoked. For a daily automatic pass, the user can sched
 0 23 * * * cd ~ && claude -p "/voice-notes" --allowedTools "Bash Read Write Edit Glob" >> ~/VoiceNotes/.cron.log 2>&1
 ```
 
+On macOS, cron can't read the Voice Memos folder until `/usr/sbin/cron` gets **Full Disk Access** too (System Settings → Privacy & Security → Full Disk Access → `+`, then ⌘⇧G and enter `/usr/sbin/cron`). Without it, scheduled runs fail with `permission_denied` even though manual runs work. The Mac must be awake at the scheduled time; pick an hour it's usually on.
+
 Set this up only when the user asks, and show them the line before installing it.
