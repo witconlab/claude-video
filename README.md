@@ -200,17 +200,23 @@ Other knobs (passed to `scripts/watch.py`):
 - `--no-dedup` — keep near-duplicate frames. By default a frame-delta pass drops frames that are visually near-identical to the one before them (held slides, static screen recordings, paused video), so the frame budget is spent on distinct content; this flag turns that off.
 - `--out-dir DIR` — keep working files somewhere specific (default: auto-generated tmp dir).
 
-### Voice memos and lectures → notes
+### Daily notes: recordings, KakaoTalk memos-to-self, screenshots
 
-`/voice-notes` is a second skill in the same package. It turns phone voice memos and lecture recordings into dated Markdown notes on your disk. It finds recordings that don't have a note yet and gets a transcript for each one: the iPhone Voice Memos built-in transcript (read straight from the `.m4a`), a Galaxy *Transcript assist* export saved as `<recording>.txt`, or else Whisper (same key as `/watch`). It writes one note per recording: lecture notes (outline with timestamps, key concepts, terms, exam points) or a daily-memo summary (to-dos, ideas, appointments). It also keeps an `index.md` of all notes.
+`/daily` is a second skill in the same package. It collects what you captured during the day and turns it into Markdown notes on your disk:
+
+- **Recordings** (iPhone Voice Memos, Galaxy Voice Recorder) → one note per recording: lecture notes (timestamped outline, key concepts, terms, exam points) or a memo summary (to-dos, ideas, appointments). It uses the phone's own transcript when there is one: the iOS 18+ Voice Memos transcript read straight from the `.m4a`, or a Galaxy *Transcript assist* export saved as `<recording>.txt`. Otherwise it uses Whisper, with the same key as `/watch`.
+- **KakaoTalk 나와의 채팅 exports** (`.txt`/`.csv`/`.zip` from Android, iOS, Windows, Mac). Re-export the whole chat daily; only messages newer than the last run are taken.
+- **Screenshots** from both phones (an iPhone Shortcuts automation, a synced Galaxy folder). Claude looks at each one and works out why you saved it.
+
+Everything lands in `daily/YYYY-MM-DD.md`, sorted into 공부할 것 / 관심사 / 링크 (fetched and summarized) / 할 일 / 일정, plus a running `learning-queue.md`.
 
 ```
-/voice-notes                          # new recordings from VOICE_NOTES_SOURCE (or Mac Voice Memos)
-/voice-notes ~/Downloads/lecture.m4a lecture
-/voice-notes --since 2026-10-01
+/daily                      # everything new since the last run
+/daily --only kakao         # just the KakaoTalk export
+/daily ~/Downloads/lecture.m4a
 ```
 
-Settings live in `~/.config/watch/.env`: `VOICE_NOTES_SOURCE` (where recordings land), `VOICE_NOTES_DIR` (where notes go, default `~/VoiceNotes`), and `VOICE_NOTES_LANGUAGE` (e.g. `ko`). iPhone Voice Memos sync to a Mac over iCloud and are found automatically. On Android, sync the recorder folder (Google Drive, OneDrive, Syncthing) and point `VOICE_NOTES_SOURCE` at it.
+Settings live in `~/.config/watch/.env`: `DAILY_DIR` (default `~/Daily`), `DAILY_RECORDINGS`, `DAILY_KAKAO`, `DAILY_SCREENSHOTS` (on a Mac these default to the Voice Memos folder and `iCloud Drive/Daily Inbox/{kakao,screenshots}`), and `DAILY_LANGUAGE` (e.g. `ko`). Phone setup steps are in [`skills/daily/SKILL.md`](skills/daily/SKILL.md).
 
 ## Limits
 
@@ -232,10 +238,12 @@ Settings live in `~/.config/watch/.env`: `VOICE_NOTES_SOURCE` (where recordings 
 │       ├── config.py             # shared config (~/.config/watch/.env)
 │       ├── setup.py              # preflight + installer
 │       └── build-skill.sh        # build dist/watch.skill for claude.ai upload (dev-only)
-├── skills/voice-notes/           # /voice-notes — recordings → Markdown notes
+├── skills/daily/                 # /daily — recordings, KakaoTalk, screenshots → Markdown notes
 │   ├── SKILL.md
 │   └── scripts/
-│       ├── notes.py              # find new recordings → transcribe → JSON manifest
+│       ├── daily.py              # entry point — collect everything new → JSON manifest by day
+│       ├── notes.py              # recordings: find → phone transcript or Whisper
+│       ├── inbox.py              # KakaoTalk export parsing, screenshots, pending state
 │       └── whisper.py            # verbatim copy of skills/watch/scripts/whisper.py
 ├── hooks/                        # SessionStart status hook (Claude Code only)
 ├── .claude-plugin/               # plugin.json + marketplace.json (Claude Code)

@@ -7,7 +7,7 @@ Agent Skills package that gives an agent a video input. Installable across Claud
 - `skills/watch/SKILL.md` — canonical skill contract the model reads when `/watch` fires. Source of truth for behavior across every host.
 - `skills/watch/scripts/watch.py` — entry point; orchestrates download → frames → transcript.
 - `skills/watch/scripts/{download,frames,transcribe,whisper,setup,config}.py` — yt-dlp wrapper, ffmpeg frame extraction + auto-fps, caption/Whisper transcription, preflight/installer, shared config.
-- `skills/voice-notes/` — second self-contained skill (`/voice-notes`): `scripts/notes.py` finds un-noted recordings, gets transcripts (sidecar `.txt` → iPhone Voice Memos `tsrp` atom → Whisper) (cached in `<notes>/transcripts/`), and prints a JSON manifest; the model writes the notes. Dedup is by the `source:` frontmatter line in existing notes.
+- `skills/daily/` — second self-contained skill (`/daily`). `scripts/daily.py` prints one JSON manifest grouped by day. `scripts/notes.py` handles recordings: transcripts come from a sidecar `.txt`, then the iPhone Voice Memos `tsrp` atom, then Whisper, and are cached in `<out>/transcripts/`; dedup is by the `source:` frontmatter of recording notes. `scripts/inbox.py` handles KakaoTalk exports and screenshots: a high-water mark plus pending items per day live in `<out>/.daily/state.json`, and the model clears a day with `--mark-noted` after writing its daily note. The model writes all notes.
 - `skills/watch/scripts/build-skill.sh` — builds `dist/watch.skill` for claude.ai upload (dev-only).
 - `hooks/` — Claude Code SessionStart setup-status hook (Claude Code only).
 - `.claude-plugin/` — `plugin.json` + `marketplace.json` (Claude Code plugin + local marketplace).
@@ -48,5 +48,5 @@ bash skills/watch/scripts/build-skill.sh   # → dist/watch.skill
 
 - Keep the version in sync across `skills/watch/SKILL.md` (frontmatter), `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json` when cutting a release.
 - Releasing: tag `vX.Y.Z` and push the tag; `.github/workflows/release.yml` builds `dist/watch.skill` and attaches it to the GitHub release.
-- `skills/voice-notes/scripts/whisper.py` is a verbatim copy of `skills/watch/scripts/whisper.py` (each skill folder must be self-contained). Edit both together; `tests/test_voice_notes.py` fails if they drift.
+- `skills/daily/scripts/whisper.py` is a verbatim copy of `skills/watch/scripts/whisper.py` (each skill folder must be self-contained). Edit both together; `tests/test_daily_recordings.py` fails if they drift.
 - Never commit real API keys or `.env` contents; keys live in `~/.config/watch/.env` (mode `0600`) at runtime.

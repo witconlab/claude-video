@@ -5,7 +5,12 @@ All notable changes to `/watch` are documented here.
 ## [Unreleased]
 
 ### Added
-- **`/voice-notes` skill** (`skills/voice-notes/`). It turns phone voice memos and lecture recordings into dated local Markdown notes: lecture notes or a daily-memo summary with to-dos, plus an `index.md`. It picks up only recordings without a note (dedup via the `source:` frontmatter), caches transcripts, and finds iPhone Voice Memos on a Mac automatically. It prefers the phone's own transcript (the iOS 18+ Voice Memos `tsrp` atom inside the `.m4a`, or a `<recording>.txt` sidecar such as a Galaxy Transcript assist export) and calls Whisper only when neither exists. Configure it with `VOICE_NOTES_SOURCE`, `VOICE_NOTES_DIR`, and `VOICE_NOTES_LANGUAGE`.
+- **`/daily` skill** (`skills/daily/`). It turns the day's captures into local Markdown notes.
+  - *Recordings*: one lecture or memo note per recording. It uses the phone's own transcript first (the iOS 18+ Voice Memos `tsrp` atom inside the `.m4a`, or a `<recording>.txt` sidecar such as a Galaxy Transcript assist export) and falls back to Whisper. Dedup is by `source:` frontmatter.
+  - *KakaoTalk 나와의 채팅 exports*: Android, iOS, Windows and Mac, `.txt`/`.csv`/`.zip`, Korean or English. A high-water mark means daily full re-exports only yield new messages.
+  - *Screenshots*: from an iPhone Shortcuts automation or a synced Galaxy folder. The app name is taken from Galaxy filenames, and HEIC is converted via `sips`.
+  - Everything is grouped into `daily/YYYY-MM-DD.md` plus a `learning-queue.md`. Collected items stay pending in `.daily/state.json` until the model runs `daily.py --mark-noted` for that day.
+  - Configure it with `DAILY_DIR`, `DAILY_RECORDINGS`, `DAILY_KAKAO`, `DAILY_SCREENSHOTS`, and `DAILY_LANGUAGE`.
 - Whisper `language` hint (`transcribe_video(..., language="ko")`) for more accurate non-English transcription.
 
 ## [0.2.0] — 2026-06-29

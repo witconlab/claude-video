@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""/voice-notes entry point: find new recordings, transcribe them, hand off to the model.
+"""Recordings half of /daily: find new recordings, transcribe them, hand off to the model.
 
 Flow: scan a source folder (phone voice-memo sync folder) for audio files →
 skip any recording a note already cites in its `source:` frontmatter →
@@ -30,7 +30,7 @@ import whisper  # noqa: E402
 
 
 CONFIG_FILE = Path.home() / ".config" / "watch" / ".env"
-DEFAULT_OUT = Path.home() / "VoiceNotes"
+DEFAULT_OUT = Path.home() / "Daily"
 DEFAULT_LIMIT = 5
 
 AUDIO_EXTS = {
@@ -62,6 +62,18 @@ HALLUCINATIONS = {
 FILENAME_TIME = re.compile(r"(?<!\d)(\d{8}|\d{6})[ _-](\d{6})(?!\d)")
 
 
+SETTING_KEYS = ("DAILY_DIR", "DAILY_RECORDINGS", "DAILY_KAKAO", "DAILY_SCREENSHOTS", "DAILY_LANGUAGE")
+LEGACY_KEYS = {
+    "VOICE_NOTES_DIR": "DAILY_DIR",
+    "VOICE_NOTES_SOURCE": "DAILY_RECORDINGS",
+    "VOICE_NOTES_LANGUAGE": "DAILY_LANGUAGE",
+}
+
+
+def split_paths(value: str | None) -> list[Path]:
+    return [expand(p) for p in (value or "").split(os.pathsep) if p.strip()]
+
+
 def read_settings(path: Path | None = None) -> dict[str, str]:
     path = path or CONFIG_FILE
     values: dict[str, str] = {}
@@ -81,9 +93,13 @@ def read_settings(path: Path | None = None) -> dict[str, str]:
             else:
                 value = re.split(r"\s+#", value, maxsplit=1)[0].strip()
             values[key.strip()] = value
-    for key in ("VOICE_NOTES_SOURCE", "VOICE_NOTES_DIR", "VOICE_NOTES_LANGUAGE"):
+    for key in (*SETTING_KEYS, *LEGACY_KEYS):
         if os.environ.get(key):
             values[key] = os.environ[key]
+    # Pre-/daily names still work.
+    for legacy, key in LEGACY_KEYS.items():
+        if values.get(legacy) and not values.get(key):
+            values[key] = values[legacy]
     return values
 
 
@@ -94,8 +110,8 @@ def expand(path: str) -> Path:
 def resolve_sources(cli: list[str], settings: dict[str, str]) -> tuple[list[Path], str]:
     if cli:
         return [expand(p) for p in cli], "argument"
-    if settings.get("VOICE_NOTES_SOURCE"):
-        return [expand(p) for p in settings["VOICE_NOTES_SOURCE"].split(os.pathsep) if p], "config"
+    if settings.get("DAILY_RECORDINGS"):
+        return split_paths(settings["DAILY_RECORDINGS"]), "config"
     found = [d for d in MAC_VOICE_MEMOS_DIRS if d.is_dir()]
     if found:
         return found[:1], "mac-voice-memos"
@@ -373,28 +389,40 @@ def builtin_transcript(path: Path) -> tuple[str, str] | None:
     return None
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description="Transcribe new voice recordings for /voice-notes.")
-    ap.add_argument("sources", nargs="*", help="Audio files or folders (default: VOICE_NOTES_SOURCE or Mac Voice Memos)")
-    ap.add_argument("--out", help="Notes folder (default: VOICE_NOTES_DIR or ~/VoiceNotes)")
+def build_parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(description="Transcribe new voice recordings for /daily.")
+    ap.add_argument("sources", nargs="*", help="Audio files or folders (default: DAILY_RECORDINGS or Mac Voice Memos)")
+    ap.add_argument("--out", help="Output root (default: DAILY_DIR or ~/Daily)")
     ap.add_argument("--since", help="Only recordings on/after YYYY-MM-DD")
     ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help=f"Max recordings to transcribe this run (default {DEFAULT_LIMIT}, 0 = no limit)")
-    ap.add_argument("--language", help="Whisper language hint, e.g. ko (default: VOICE_NOTES_LANGUAGE or auto-detect)")
+    ap.add_argument("--language", help="Whisper language hint, e.g. ko (default: DAILY_LANGUAGE or auto-detect)")
     ap.add_argument("--whisper", choices=["groq", "openai"], help="Force a Whisper backend")
-    ap.add_argument("--list", action="store_true", help="Only list pending recordings; transcribe nothing")
+    ap.add_argument("--list", action="store_true", help="Only list pending items; change nothing")
     ap.add_argument("--redo", action="store_true", help="Include recordings that already have a note")
     ap.add_argument("--force-whisper", action="store_true", help="Ignore phone transcripts and cached ones; re-transcribe with Whisper")
-    args = ap.parse_args()
+    return ap
 
-    settings = read_settings()
-    out_dir = expand(args.out or settings.get("VOICE_NOTES_DIR") or str(DEFAULT_OUT))
-    language = args.language or settings.get("VOICE_NOTES_LANGUAGE") or None
+
+def output_dir(args: argparse.Namespace, settings: dict[str, str]) -> Path:
+    return expand(args.out or settings.get("DAILY_DIR") or str(DEFAULT_OUT))
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    report, code = run(args, read_settings())
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return code
+
+
+def run(args: argparse.Namespace, settings: dict[str, str]) -> tuple[dict, int]:
+    out_dir = output_dir(args, settings)
+    language = args.language or settings.get("DAILY_LANGUAGE") or None
     sources, source_origin = resolve_sources(args.sources, settings)
     since = date.fromisoformat(args.since) if args.since else None
 
     report: dict = {
         "output_dir": str(out_dir),
-        "output_dir_configured": bool(args.out or settings.get("VOICE_NOTES_DIR")),
+        "output_dir_configured": bool(args.out or settings.get("DAILY_DIR")),
         "sources": [str(s) for s in sources],
         "source_origin": source_origin,
         "language": language,
@@ -405,16 +433,14 @@ def main() -> int:
     }
 
     if not sources:
-        report["errors"].append({"error": "no_source", "detail": "No source given, VOICE_NOTES_SOURCE unset, and no Mac Voice Memos folder found."})
-        print(json.dumps(report, ensure_ascii=False, indent=2))
-        return 1
+        report["errors"].append({"error": "no_source", "detail": "No source given, DAILY_RECORDINGS unset, and no Mac Voice Memos folder found."})
+        return report, 1
 
     try:
         files = find_audio(sources)
     except PermissionError as exc:
         report["errors"].append({"error": "permission_denied", "detail": str(exc)})
-        print(json.dumps(report, ensure_ascii=False, indent=2))
-        return 1
+        return report, 1
     missing = [str(s) for s in sources if not s.exists()]
     for path in missing:
         report["errors"].append({"error": "not_found", "source": path})
@@ -450,7 +476,7 @@ def main() -> int:
             "duration_seconds": round(duration),
             "duration": fmt_ts(duration),
             "transcript_path": str(transcript_path),
-            "note_dir": str(out_dir / f"{when:%Y-%m}"),
+            "note_dir": str(out_dir / "recordings" / f"{when:%Y-%m}"),
             "note_prefix": f"{when:%Y-%m-%d_%H%M}",
         }
         builtin = None if args.force_whisper else builtin_transcript(path)
@@ -475,9 +501,9 @@ def main() -> int:
             if key_missing:
                 report["errors"].append({"error": "needs_whisper", "source": path.name})
                 continue
-            print(f"[voice-notes] transcribing {path.name} ({fmt_ts(duration)})…", file=sys.stderr)
+            print(f"[daily] transcribing {path.name} ({fmt_ts(duration)})…", file=sys.stderr)
             try:
-                with tempfile.TemporaryDirectory(prefix="voice-notes-") as tmp:
+                with tempfile.TemporaryDirectory(prefix="daily-") as tmp:
                     segments, backend = whisper.transcribe_video(
                         str(path), Path(tmp) / "audio.mp3", backend=backend, api_key=api_key, language=language,
                     )
@@ -494,8 +520,7 @@ def main() -> int:
         item["empty"] = transcript_path.stat().st_size == 0
         report["pending"].append(item)
 
-    print(json.dumps(report, ensure_ascii=False, indent=2))
-    return 1 if key_missing and not report["pending"] else 0
+    return report, (1 if key_missing and not report["pending"] else 0)
 
 
 if __name__ == "__main__":

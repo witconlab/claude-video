@@ -1,4 +1,4 @@
-"""/voice-notes: recording discovery, dedup, transcript caching, manifest."""
+"""/daily recordings: discovery, dedup, transcript caching, manifest."""
 from __future__ import annotations
 
 import json
@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-NOTES_SCRIPTS = REPO / "skills" / "voice-notes" / "scripts"
+NOTES_SCRIPTS = REPO / "skills" / "daily" / "scripts"
 sys.path.insert(0, str(NOTES_SCRIPTS))
 
 import notes  # noqa: E402
@@ -30,7 +30,7 @@ def make_audio(path: Path, seconds: float = 1.0, creation_time: str | None = Non
 
 
 def test_whisper_copy_matches_watch():
-    # voice-notes ships its own copy so the skill folder stays self-contained.
+    # /daily ships its own copy so the skill folder stays self-contained.
     watch_copy = REPO / "skills" / "watch" / "scripts" / "whisper.py"
     assert (NOTES_SCRIPTS / "whisper.py").read_text() == watch_copy.read_text()
 
@@ -111,7 +111,7 @@ def run_main(monkeypatch, capsys, argv):
 @pytest.fixture
 def isolated(monkeypatch, tmp_path):
     monkeypatch.setattr(notes, "CONFIG_FILE", tmp_path / "missing.env")
-    for key in ("VOICE_NOTES_SOURCE", "VOICE_NOTES_DIR", "VOICE_NOTES_LANGUAGE"):
+    for key in (*notes.SETTING_KEYS, *notes.LEGACY_KEYS):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(whisper, "load_api_key", lambda preferred=None: ("groq", "test-key"))
     calls = []
