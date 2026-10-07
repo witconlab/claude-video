@@ -200,6 +200,18 @@ Other knobs (passed to `scripts/watch.py`):
 - `--no-dedup` — keep near-duplicate frames. By default a frame-delta pass drops frames that are visually near-identical to the one before them (held slides, static screen recordings, paused video), so the frame budget is spent on distinct content; this flag turns that off.
 - `--out-dir DIR` — keep working files somewhere specific (default: auto-generated tmp dir).
 
+### Voice memos and lectures → notes
+
+`/voice-notes` is a second skill in the same package. It turns phone voice memos and lecture recordings into dated Markdown notes on your disk. It finds recordings that don't have a note yet, transcribes them with Whisper (same key as `/watch`), and writes one note per recording: lecture notes (outline with timestamps, key concepts, terms, exam points) or a daily-memo summary (to-dos, ideas, appointments). It also keeps an `index.md` of all notes.
+
+```
+/voice-notes                          # new recordings from VOICE_NOTES_SOURCE (or Mac Voice Memos)
+/voice-notes ~/Downloads/lecture.m4a lecture
+/voice-notes --since 2026-10-01
+```
+
+Settings live in `~/.config/watch/.env`: `VOICE_NOTES_SOURCE` (where recordings land), `VOICE_NOTES_DIR` (where notes go, default `~/VoiceNotes`), and `VOICE_NOTES_LANGUAGE` (e.g. `ko`). iPhone Voice Memos sync to a Mac over iCloud and are found automatically. On Android, sync the recorder folder (Google Drive, OneDrive, Syncthing) and point `VOICE_NOTES_SOURCE` at it.
+
 ## Limits
 
 - **Long-video accuracy depends on the detail mode.** On the capped modes (`efficient`, default `balanced`) coverage thins out past ~10 minutes — the frame cap spreads across the whole clip, so the script prints a "sparse scan" warning and you're better off re-running focused with `--start`/`--end`. `token-burner` lifts the cap and keeps *every* scene-change frame across the full video, so it stays complete on longer clips at the cost of more image tokens. The 10-minute mark is guidance for the capped modes, not a hard ceiling.
@@ -220,6 +232,11 @@ Other knobs (passed to `scripts/watch.py`):
 │       ├── config.py             # shared config (~/.config/watch/.env)
 │       ├── setup.py              # preflight + installer
 │       └── build-skill.sh        # build dist/watch.skill for claude.ai upload (dev-only)
+├── skills/voice-notes/           # /voice-notes — recordings → Markdown notes
+│   ├── SKILL.md
+│   └── scripts/
+│       ├── notes.py              # find new recordings → transcribe → JSON manifest
+│       └── whisper.py            # verbatim copy of skills/watch/scripts/whisper.py
 ├── hooks/                        # SessionStart status hook (Claude Code only)
 ├── .claude-plugin/               # plugin.json + marketplace.json (Claude Code)
 ├── .codex-plugin/                # plugin.json — Codex/agents manifest ("skills": "./skills/")

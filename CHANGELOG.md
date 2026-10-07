@@ -2,6 +2,12 @@
 
 All notable changes to `/watch` are documented here.
 
+## [Unreleased]
+
+### Added
+- **`/voice-notes` skill** (`skills/voice-notes/`). It turns phone voice memos and lecture recordings into dated local Markdown notes: lecture notes or a daily-memo summary with to-dos, plus an `index.md`. It picks up only recordings without a note (dedup via the `source:` frontmatter), caches transcripts, and finds iPhone Voice Memos on a Mac automatically. Configure it with `VOICE_NOTES_SOURCE`, `VOICE_NOTES_DIR`, and `VOICE_NOTES_LANGUAGE`.
+- Whisper `language` hint (`transcribe_video(..., language="ko")`) for more accurate non-English transcription.
+
 ## [0.2.0] — 2026-06-29
 
 ### Added
