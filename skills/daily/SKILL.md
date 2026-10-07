@@ -68,12 +68,16 @@ If the manifest shows `output_dir_configured: false`, this is the first run. Ask
   - iCloud Photos must actually be syncing. If the iPhone's 사진 → 모음 shows **동기화가 일시 정지됨** (low battery or Low Power Mode), tap it to resume, or new screenshots won't reach the Mac.
   - `photos_export_failed` usually means Full Disk Access is missing or Photos needs to be opened once.
 - *iPhone without that*: a Shortcuts automation copies the day's screenshots into iCloud Drive. Shortcuts → 자동화 → `+` → 특정 시간 (e.g. 23:30, 매일, **즉시 실행**) → actions: **사진 찾기** (*스크린샷임* is true, *촬영일* is *오늘*) → **각 항목을 반복** { **날짜 포맷** of the item's *촬영일* with custom format `yyyy-MM-dd HH.mm.ss` → **이름 변경** the item to that text → **파일 저장** to iCloud Drive/Daily Inbox/screenshots, *저장 위치 묻기* off }. The rename keeps the capture time. Without it every screenshot is dated by when the shortcut ran. Use either this or `DAILY_PHOTOS`, not both, or screenshots get collected twice.
+- *iCloud full or off* (사진 shows **동기화가 일시 정지됨** because storage is full): Photos, Voice Memos and iCloud Drive all stop syncing. That stops the two routes above and the recordings route too. Options:
+  1. Free up iCloud space (Settings → [name] → iCloud → 저장 공간 관리; old device backups are a common culprit) or upgrade to iCloud+. This restores everything.
+  2. **AirDrop**, free, a few taps a day. In 사진 → 모음 → 스크린샷, select the day's screenshots → 공유 → AirDrop → this Mac. They arrive in `~/Downloads` as `IMG_1234.PNG`, and the capture time is read from the image's own metadata, so they still land on the right day. Do the same for voice memos (음성 메모 → 공유 → AirDrop). Then the user says e.g. "AirDrop으로 받은 거 정리해줘" (Step 1).
 - *Galaxy*: sync `DCIM/Screenshots` (or `Pictures/Screenshots`) the same way as recordings, and add that folder to `DAILY_SCREENSHOTS`. Galaxy names screenshots `Screenshot_YYYYMMDD_HHMMSS_<App>.jpg`, so you'll also know which app each came from.
 
 The first run only collects the last 7 days of KakaoTalk messages and screenshots. Pass `--since YYYY-MM-DD` to reach further back. To organize an existing screenshot backlog by date, go a month at a time (`--only screenshots --since 2026-09-01`), because every screenshot is an image you have to look at. Each day still gets its own daily note.
 
 ## Step 1: Parse the request
 
+- "AirDrop으로 받은 것" → pass the matching files from `~/Downloads` explicitly: iPhone screenshots are `IMG_*.PNG` (photos are HEIC/JPG, so skip those), recordings are audio files (`*.m4a`). Only take files from the time window the user means (default: modified today, e.g. `find ~/Downloads -maxdepth 1 -newermt today -iname 'IMG_*.png'`). Already-collected files are skipped automatically.
 - File paths → pass them. Audio goes to recordings, `.txt/.csv/.zip` to KakaoTalk, images to screenshots.
 - "녹음만", "카톡만", "스크린샷만" → `--only recordings|kakao|screenshots` (repeatable).
 - A date → `--since YYYY-MM-DD`. "녹음 전부" → `--limit 0` (recordings default to 5 per run).

@@ -275,3 +275,19 @@ def test_photos_export_errors_are_reported(setup, tmp_path, monkeypatch):
     report, _ = daily.run(make_args(out, only=["screenshots"]), settings)
     assert report["errors"][0]["error"] == "photos_export_failed"
     assert "boom" in report["errors"][0]["detail"]
+
+
+def test_embedded_time_from_xmp_and_exif(tmp_path):
+    png = tmp_path / "IMG_1234.PNG"
+    png.write_bytes(b"\x89PNG\r\n\x1a\n" + b"iTXtXML:com.adobe.xmp\x00<x:xmpmeta>"
+                    b"<photoshop:DateCreated>2026-09-12T08:05:44</photoshop:DateCreated>" + b"\x00" * 64)
+    assert inbox.screenshot_time(png) == (datetime(2026, 9, 12, 8, 5, 44), None)
+
+    jpg = tmp_path / "IMG_5678.JPG"
+    jpg.write_bytes(b"\xff\xd8\xff\xe1Exif\x00\x00MM" + b"2026:09:13 21:10:02\x00" + b"\x00" * 64)
+    assert inbox.screenshot_time(jpg) == (datetime(2026, 9, 13, 21, 10, 2), None)
+
+    # A filename timestamp still wins over metadata.
+    named = tmp_path / "Screenshot_20261007_093015.jpg"
+    named.write_bytes(jpg.read_bytes())
+    assert inbox.screenshot_time(named)[0] == datetime(2026, 10, 7, 9, 30, 15)

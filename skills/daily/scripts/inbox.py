@@ -238,6 +238,7 @@ def advance_kakao(state: dict, fresh: list[dict]) -> None:
 
 # --- Screenshots ----------------------------------------------------------
 # Galaxy: Screenshot_20261007-093015_KakaoTalk.jpg (app name after the time)
+# iPhone (AirDrop / cable): IMG_1234.PNG → time read from embedded metadata
 # iPhone (via the Shortcut in SKILL.md): 2026-10-07 09.30.15.png
 # macOS:  Screenshot 2026-10-07 at 9.30.15 PM.png / 스크린샷 2026-10-07 오후 9.30.15.png
 SHOT_COMPACT = re.compile(r"(?<!\d)(20\d{6})[_-](\d{6})(?!\d)(?:[_-]([^.]+))?")
@@ -264,7 +265,35 @@ def screenshot_time(path: Path) -> tuple[datetime, str | None]:
             return datetime(int(y), int(mo), int(d), stamp.hour, stamp.minute), None
         except ValueError:
             pass
-    return _file_time(path), None
+    return embedded_time(path) or _file_time(path), None
+
+
+# Capture time stored inside the image: EXIF DateTimeOriginal/DateTime is
+# ASCII "YYYY:MM:DD HH:MM:SS"; XMP (iPhone screenshot PNGs) uses ISO 8601 in
+# tags like photoshop:DateCreated / exif:DateTimeOriginal / xmp:CreateDate.
+# This matters for AirDropped or cable-copied files (IMG_1234.PNG), whose
+# file timestamps are the copy time, not the capture time.
+EXIF_ASCII = re.compile(rb"(?<!\d)((?:19|20)\d{2}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})(?!\d)")
+XMP_DATE = re.compile(
+    rb"(?:DateCreated|DateTimeOriginal|CreateDate)[^0-9]{1,40}?((?:19|20)\d{2})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?"
+)
+
+
+def embedded_time(path: Path, limit: int = 256 * 1024) -> datetime | None:
+    try:
+        with path.open("rb") as fh:
+            head = fh.read(limit)
+    except OSError:
+        return None
+    for pattern in (XMP_DATE, EXIF_ASCII):
+        m = pattern.search(head)
+        if m:
+            parts = [int(g) if g else 0 for g in m.groups()]
+            try:
+                return datetime(*parts)
+            except ValueError:
+                continue
+    return None
 
 
 def _file_time(path: Path) -> datetime:
