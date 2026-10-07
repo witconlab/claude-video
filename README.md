@@ -202,7 +202,7 @@ Other knobs (passed to `scripts/watch.py`):
 
 ### Voice memos and lectures → notes
 
-`/voice-notes` is a second skill in the same package. It turns phone voice memos and lecture recordings into dated Markdown notes on your disk. It finds recordings that don't have a note yet, transcribes them with Whisper (same key as `/watch`), and writes one note per recording: lecture notes (outline with timestamps, key concepts, terms, exam points) or a daily-memo summary (to-dos, ideas, appointments). It also keeps an `index.md` of all notes.
+`/voice-notes` is a second skill in the same package. It turns phone voice memos and lecture recordings into dated Markdown notes on your disk. It finds recordings that don't have a note yet and gets a transcript for each one: the iPhone Voice Memos built-in transcript (read straight from the `.m4a`), a Galaxy *Transcript assist* export saved as `<recording>.txt`, or else Whisper (same key as `/watch`). It writes one note per recording: lecture notes (outline with timestamps, key concepts, terms, exam points) or a daily-memo summary (to-dos, ideas, appointments). It also keeps an `index.md` of all notes.
 
 ```
 /voice-notes                          # new recordings from VOICE_NOTES_SOURCE (or Mac Voice Memos)

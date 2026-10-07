@@ -177,7 +177,7 @@ def test_main_reports_missing_key(isolated, monkeypatch, capsys, tmp_path):
     make_audio(src / "a.m4a")
     code, report = run_main(monkeypatch, capsys, [str(src), "--out", str(tmp_path / "out")])
     assert code == 1
-    assert report["errors"][0]["error"] == "no_api_key"
+    assert [e["error"] for e in report["errors"]] == ["no_api_key", "needs_whisper"]
 
 
 def test_settings_file_supplies_defaults(isolated, monkeypatch, capsys, tmp_path):
@@ -195,3 +195,106 @@ def test_settings_file_supplies_defaults(isolated, monkeypatch, capsys, tmp_path
     assert report["output_dir"] == str(tmp_path / "notes")
     assert report["output_dir_configured"] is True
     assert isolated == [("a.m4a", "ko")]
+
+
+# --- Built-in phone transcripts -------------------------------------------
+
+def atom(kind: bytes, body: bytes) -> bytes:
+    return (8 + len(body)).to_bytes(4, "big") + kind + body
+
+
+def inject_tsrp(path: Path, payload: dict) -> Path:
+    """Append moov/trak/udta/tsrp the way iOS Voice Memos does (moov sits after mdat)."""
+    buf = bytearray(path.read_bytes())
+    tsrp = atom(b"udta", atom(b"tsrp", json.dumps(payload, ensure_ascii=False).encode("utf-8")))
+    pos = 0
+    while pos < len(buf):
+        size = int.from_bytes(buf[pos:pos + 4], "big")
+        if buf[pos + 4:pos + 8] == b"moov":
+            inner = pos + 8
+            while inner < pos + size:
+                isize = int.from_bytes(buf[inner:inner + 4], "big")
+                if buf[inner + 4:inner + 8] == b"trak":
+                    buf[inner + isize:inner + isize] = tsrp
+                    buf[inner:inner + 4] = (isize + len(tsrp)).to_bytes(4, "big")
+                    buf[pos:pos + 4] = (size + len(tsrp)).to_bytes(4, "big")
+                    path.write_bytes(bytes(buf))
+                    return path
+                inner += isize
+        pos += size
+    raise AssertionError("no moov/trak in synthesized clip")
+
+
+APPLE_PAYLOAD = {
+    "attributedString": {
+        "runs": ["오늘은 ", 0, "자료구조 ", 1, "수업입니다. ", 2, "스택을 ", 3, "배웁니다.", 4],
+        "attributeTable": [
+            {"timeRange": [0.0, 0.5]}, {"timeRange": [0.5, 1.0]}, {"timeRange": [1.0, 1.6]},
+            {"timeRange": [4.0, 4.4]}, {"timeRange": [4.4, 5.0]},
+        ],
+    },
+    "locale": {"identifier": "ko_KR", "current": 0},
+}
+
+
+def test_apple_transcript_from_tsrp_atom(tmp_path):
+    path = inject_tsrp(make_audio(tmp_path / "memo.m4a"), APPLE_PAYLOAD)
+    segments, locale = notes.apple_transcript(path)
+    assert locale == "ko_KR"
+    assert segments == [
+        {"start": 0.0, "end": 1.6, "text": "오늘은 자료구조 수업입니다."},
+        {"start": 4.0, "end": 5.0, "text": "스택을 배웁니다."},
+    ]
+    # The injected atom must not break normal probing.
+    assert float(notes.probe(path)["duration"]) > 0
+
+
+def test_apple_transcript_absent(tmp_path):
+    assert notes.apple_transcript(make_audio(tmp_path / "plain.m4a")) is None
+    junk = tmp_path / "junk.m4a"
+    junk.write_bytes(b"not an mp4 at all")
+    assert notes.apple_transcript(junk) is None
+
+
+def test_group_words_breaks_on_pause_and_length():
+    words = [("a ", 0.0, 0.5), ("b ", 0.6, 1.0), ("c ", 5.0, 5.5), ("d", 40.0, 40.5)]
+    assert [s["text"] for s in notes.group_words(words)] == ["a b", "c", "d"]
+
+
+def test_main_uses_phone_transcripts_without_whisper(isolated, monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(whisper, "load_api_key", lambda preferred=None: (None, None))
+    src = tmp_path / "memos"
+    src.mkdir()
+    inject_tsrp(make_audio(src / "20261007 093015-IPHONE.m4a"), APPLE_PAYLOAD)
+    make_audio(src / "음성 261007_140000.m4a")
+    (src / "음성 261007_140000.txt").write_text("\ufeff화자 1 00:00\n회의 내용입니다\n", encoding="utf-8")
+    out = tmp_path / "out"
+
+    code, report = run_main(monkeypatch, capsys, [str(src), "--out", str(out), "--list"])
+    assert [p["transcript_source"] for p in report["pending"]] == ["apple-voice-memos (ko_KR)", "sidecar"]
+
+    code, report = run_main(monkeypatch, capsys, [str(src), "--out", str(out)])
+    assert code == 0 and report["errors"] == [] and isolated == []
+    iphone, galaxy = report["pending"]
+    assert iphone["transcript_source"] == "apple-voice-memos (ko_KR)"
+    assert Path(iphone["transcript_path"]).read_text(encoding="utf-8") == (
+        "[00:00:00] 오늘은 자료구조 수업입니다.\n[00:00:04] 스택을 배웁니다.\n"
+    )
+    assert galaxy["transcript_source"] == "sidecar"
+    assert Path(galaxy["transcript_path"]).read_text(encoding="utf-8") == "화자 1 00:00\n회의 내용입니다\n"
+
+    # Origin survives the cache on the next run.
+    _, report = run_main(monkeypatch, capsys, [str(src), "--out", str(out)])
+    assert report["pending"][0]["transcript_source"] == "apple-voice-memos (ko_KR)"
+
+
+def test_force_whisper_ignores_phone_transcript(isolated, monkeypatch, capsys, tmp_path):
+    src = tmp_path / "memos"
+    src.mkdir()
+    inject_tsrp(make_audio(src / "memo.m4a"), APPLE_PAYLOAD)
+    out = tmp_path / "out"
+    run_main(monkeypatch, capsys, [str(src), "--out", str(out)])
+    assert isolated == []
+    _, report = run_main(monkeypatch, capsys, [str(src), "--out", str(out), "--force-whisper"])
+    assert isolated == [("memo.m4a", None)]
+    assert report["pending"][0]["transcript_source"] == "whisper (groq)"

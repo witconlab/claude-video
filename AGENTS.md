@@ -7,7 +7,7 @@ Agent Skills package that gives an agent a video input. Installable across Claud
 - `skills/watch/SKILL.md` — canonical skill contract the model reads when `/watch` fires. Source of truth for behavior across every host.
 - `skills/watch/scripts/watch.py` — entry point; orchestrates download → frames → transcript.
 - `skills/watch/scripts/{download,frames,transcribe,whisper,setup,config}.py` — yt-dlp wrapper, ffmpeg frame extraction + auto-fps, caption/Whisper transcription, preflight/installer, shared config.
-- `skills/voice-notes/` — second self-contained skill (`/voice-notes`): `scripts/notes.py` finds un-noted recordings, transcribes them (cached in `<notes>/transcripts/`), and prints a JSON manifest; the model writes the notes. Dedup is by the `source:` frontmatter line in existing notes.
+- `skills/voice-notes/` — second self-contained skill (`/voice-notes`): `scripts/notes.py` finds un-noted recordings, gets transcripts (sidecar `.txt` → iPhone Voice Memos `tsrp` atom → Whisper) (cached in `<notes>/transcripts/`), and prints a JSON manifest; the model writes the notes. Dedup is by the `source:` frontmatter line in existing notes.
 - `skills/watch/scripts/build-skill.sh` — builds `dist/watch.skill` for claude.ai upload (dev-only).
 - `hooks/` — Claude Code SessionStart setup-status hook (Claude Code only).
 - `.claude-plugin/` — `plugin.json` + `marketplace.json` (Claude Code plugin + local marketplace).
